@@ -39,9 +39,52 @@ start();
 // wildfire, wildfires -> wildfire
 function normalizeType(s) {
   const m = String(s || '').trim().toLowerCase();
-  if (['flooding','floods','flood'].includes(m)) return 'flood';
+  // Floods
+  if (['flooding','floods','flood', "flash flood", "flash floods"].includes(m)) return 'flood';
+
+  // Earthquakes
   if (['quakes','earthquakes','quake', 'earthquake'].includes(m)) return 'earthquake';
+
+  // Wildfires
   if (['wildfires','bushfire','forest fire','forest fires', 'whildfire'].includes(m)) return 'wildfire';
+
+  // Hurricanes / Tropical Storms
+  if (['hurricane', 'hurricanes', 'cyclone', 'cyclones', 'typhoon', 'typhoons', 'tropical storm', 'tropical storms'].includes(m)) return 'hurricane';
+
+  // Tornadoes
+  if (['tornado', 'tornadoes', 'twister', 'twisters'].includes(m)) return 'tornado';
+
+  // Storms / Severe Weather
+  if (['storm', 'storms', 'thunderstorm', 'thunderstorms', 'hailstorm', 'hailstorms', 'blizzard', 'blizzards', 'ice storm', 'ice storms'].includes(m)) return 'storm';
+
+  // Drought / Heatwave
+  if (['drought', 'droughts', 'heatwave', 'heat wave', 'heatwaves', 'heat waves'].includes(m)) return 'heatwave';
+
+  // Landslides / Mudslides
+  if (['landslide', 'landslides', 'mudslide', 'mudslides', 'rockslide', 'rockslides'].includes(m)) return 'landslide';
+
+  // Volcanoes
+  if (['volcano', 'volcanoes', 'eruption', 'eruptions'].includes(m)) return 'volcano';
+
+  // Avalanche
+  if (['avalanche', 'avalanches'].includes(m)) return 'avalanche';
+
+  // Fire (non-wildfire)
+  if (['fire', 'fires', 'building fire', 'structure fire', 'chemical fire'].includes(m)) return 'fire';
+
+  // Explosion / Collapse
+  if (['explosion', 'explosions', 'blast', 'blasts', 'building collapse', 'bridge collapse'].includes(m)) return 'explosion';
+
+  // Accidents (transport)
+  if (['plane crash', 'plane crashes', 'airplane crash', 'train derailment', 'shipwreck', 'ferry sinking', 'car crash', 'traffic accident', 'road accident', 'pileup', 'collision'].includes(m)) return 'accident';
+
+  // Disease / Health Emergencies
+  if (['outbreak', 'epidemic', 'pandemic', 'virus', 'infection', 'cholera', 'ebola', 'covid', 'covid-19'].includes(m)) return 'disease';
+
+  // Conflict / Violence
+  if (['shooting', 'shootings', 'attack', 'attacks', 'bombing', 'bombings', 'terrorism', 'terrorist', 'riot', 'riots', 'protest violence'].includes(m)) return 'violence';
+
+  // Default / unrecognized
   return m;
 }
 
