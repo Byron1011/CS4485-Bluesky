@@ -1,12 +1,121 @@
 [
-  {
-    "id": "p1",
-    "username": "@user123",
-    "text": "Tornado spotted near Dallas. Power lines down.",
-    "disasterType": "Tornado",
-    "latitude": 32.78,
-    "longitude": -96.80,
-    "createdAt": "2025-09-25T21:42:00Z",
-    "url": "https://bsky.app/profile/example/post/123"
-  }
+  { "id": "p1",  "username": "@dfw_watch1", "text": "Rotation spotted near Love Field. Sirens audible.", "disasterType": "Tornado", "latitude": 32.847, "longitude": -96.852, "createdAt": "2025-10-06T13:10:00Z", "url": "https://bsky.app/profile/example/post/3001" },
+  { "id": "p2",  "username": "@dfw_watch2", "text": "Funnel cloud over NW Dallas. Moving east.", "disasterType": "Tornado", "latitude": 32.847, "longitude": -96.852, "createdAt": "2025-10-06T13:12:00Z", "url": "https://bsky.app/profile/example/post/3002" },
+  { "id": "p3",  "username": "@dfw_watch3", "text": "Debris reported near Walnut Hill & Marsh.", "disasterType": "Tornado", "latitude": 32.873, "longitude": -96.858, "createdAt": "2025-10-06T13:14:00Z", "url": "https://bsky.app/profile/example/post/3003" },
+  { "id": "p4",  "username": "@dfw_thunder1", "text": "Sheet rain in Irving; visibility low.", "disasterType": "Thunderstorm", "latitude": 32.814, "longitude": -96.949, "createdAt": "2025-10-06T13:16:00Z", "url": "https://bsky.app/profile/example/post/3004" },
+  { "id": "p5",  "username": "@dfw_thunder2", "text": "Lightning every few seconds over Addison.", "disasterType": "Thunderstorm", "latitude": 32.961, "longitude": -96.829, "createdAt": "2025-10-06T13:18:00Z", "url": "https://bsky.app/profile/example/post/3005" },
+  { "id": "p6",  "username": "@dfw_tornado4", "text": "Sirens in Carrollton—taking shelter.", "disasterType": "Tornado", "latitude": 32.990, "longitude": -96.899, "createdAt": "2025-10-06T13:20:00Z", "url": "https://bsky.app/profile/example/post/3006" },
+  { "id": "p7",  "username": "@dfw_stack1", "text": "Power flash near DNT & 635.", "disasterType": "Thunderstorm", "latitude": 32.908, "longitude": -96.821, "createdAt": "2025-10-06T13:22:00Z", "url": "https://bsky.app/profile/example/post/3007" },
+  { "id": "p8",  "username": "@dfw_stack2", "text": "Transformer blew? Loud pop heard.", "disasterType": "Thunderstorm", "latitude": 32.908, "longitude": -96.821, "createdAt": "2025-10-06T13:23:30Z", "url": "https://bsky.app/profile/example/post/3008" },
+  { "id": "p9",  "username": "@dfw_stack3", "text": "Same location—lights flickered twice.", "disasterType": "Thunderstorm", "latitude": 32.908, "longitude": -96.821, "createdAt": "2025-10-06T13:25:00Z", "url": "https://bsky.app/profile/example/post/3009" },
+  { "id": "p10", "username": "@arlington_report", "text": "Tornado near Collins & I-20 moving ENE.", "disasterType": "Tornado", "latitude": 32.706, "longitude": -97.084, "createdAt": "2025-10-06T13:26:00Z", "url": "https://bsky.app/profile/example/post/3010" },
+
+  { "id": "p11", "username": "@okc_sky", "text": "Wall cloud west of OKC. Rotation tightening.", "disasterType": "Tornado", "latitude": 35.4676, "longitude": -97.5164, "createdAt": "2025-10-06T14:05:00Z", "url": "https://bsky.app/profile/example/post/3011" },
+  { "id": "p12", "username": "@okc_watch", "text": "Hail up to quarter size in Bethany.", "disasterType": "Thunderstorm", "latitude": 35.5070, "longitude": -97.6321, "createdAt": "2025-10-06T14:07:00Z", "url": "https://bsky.app/profile/example/post/3012" },
+  { "id": "p13", "username": "@tulsa_live", "text": "Heavy rain downtown Tulsa. Streets ponding.", "disasterType": "Thunderstorm", "latitude": 36.15398, "longitude": -95.99277, "createdAt": "2025-10-06T14:10:00Z", "url": "https://bsky.app/profile/example/post/3013" },
+  { "id": "p14", "username": "@tulsa_alert", "text": "Multiple strikes NE of river.", "disasterType": "Thunderstorm", "latitude": 36.15398, "longitude": -95.99277, "createdAt": "2025-10-06T14:11:30Z", "url": "https://bsky.app/profile/example/post/3014" },
+  { "id": "p15", "username": "@tulsa_stack", "text": "Same block: power flicker again.", "disasterType": "Thunderstorm", "latitude": 36.15398, "longitude": -95.99277, "createdAt": "2025-10-06T14:13:00Z", "url": "https://bsky.app/profile/example/post/3015" },
+
+  { "id": "p16", "username": "@mia_rain", "text": "Downtown Miami: intense cell overhead.", "disasterType": "Thunderstorm", "latitude": 25.7617, "longitude": -80.1918, "createdAt": "2025-10-06T15:00:00Z", "url": "https://bsky.app/profile/example/post/3016" },
+  { "id": "p17", "username": "@mia_flood", "text": "Biscayne Blvd accumulating water at intersections.", "disasterType": "Flood", "latitude": 25.774, "longitude": -80.190, "createdAt": "2025-10-06T15:05:00Z", "url": "https://bsky.app/profile/example/post/3017" },
+  { "id": "p18", "username": "@mia_watch", "text": "Lightning offshore—moving inland fast.", "disasterType": "Thunderstorm", "latitude": 25.7617, "longitude": -80.1918, "createdAt": "2025-10-06T15:07:00Z", "url": "https://bsky.app/profile/example/post/3018" },
+  { "id": "p19", "username": "@mia_repeat", "text": "Same spot as earlier—water rising on 1st Ave.", "disasterType": "Flood", "latitude": 25.774, "longitude": -80.190, "createdAt": "2025-10-06T15:09:00Z", "url": "https://bsky.app/profile/example/post/3019" },
+  { "id": "p20", "username": "@keys_report", "text": "Storm line visible to the SW.", "disasterType": "Thunderstorm", "latitude": 24.5551, "longitude": -81.7800, "createdAt": "2025-10-06T15:12:00Z", "url": "https://bsky.app/profile/example/post/3020" },
+
+  { "id": "p21", "username": "@nyc_now", "text": "Water on the FDR—slowdowns expected.", "disasterType": "Flood", "latitude": 40.7128, "longitude": -74.0060, "createdAt": "2025-10-06T16:02:00Z", "url": "https://bsky.app/profile/example/post/3021" },
+  { "id": "p22", "username": "@bk_storm", "text": "Thunder rolling over Brooklyn.", "disasterType": "Thunderstorm", "latitude": 40.6782, "longitude": -73.9442, "createdAt": "2025-10-06T16:05:30Z", "url": "https://bsky.app/profile/example/post/3022" },
+  { "id": "p23", "username": "@queens_watch", "text": "Localized street flooding in Queens.", "disasterType": "Flood", "latitude": 40.7282, "longitude": -73.7949, "createdAt": "2025-10-06T16:07:00Z", "url": "https://bsky.app/profile/example/post/3023" },
+  { "id": "p24", "username": "@nyc_repeat1", "text": "Same corner—curb fully under water.", "disasterType": "Flood", "latitude": 40.7128, "longitude": -74.0060, "createdAt": "2025-10-06T16:08:30Z", "url": "https://bsky.app/profile/example/post/3024" },
+  { "id": "p25", "username": "@nyc_repeat2", "text": "Water receding a bit but still high.", "disasterType": "Flood", "latitude": 40.7128, "longitude": -74.0060, "createdAt": "2025-10-06T16:10:00Z", "url": "https://bsky.app/profile/example/post/3025" },
+
+  { "id": "p26", "username": "@chi_lightning", "text": "CG strikes near the Loop.", "disasterType": "Thunderstorm", "latitude": 41.8781, "longitude": -87.6298, "createdAt": "2025-10-06T17:00:00Z", "url": "https://bsky.app/profile/example/post/3026" },
+  { "id": "p27", "username": "@chi_rain", "text": "Puddles forming on Lower Wacker.", "disasterType": "Flood", "latitude": 41.8781, "longitude": -87.6298, "createdAt": "2025-10-06T17:02:00Z", "url": "https://bsky.app/profile/example/post/3027" },
+  { "id": "p28", "username": "@chi_loop", "text": "Wind gusts shaking windows.", "disasterType": "Thunderstorm", "latitude": 41.883, "longitude": -87.632, "createdAt": "2025-10-06T17:05:00Z", "url": "https://bsky.app/profile/example/post/3028" },
+  { "id": "p29", "username": "@chi_repeat", "text": "Same block: manhole splashing.", "disasterType": "Flood", "latitude": 41.8781, "longitude": -87.6298, "createdAt": "2025-10-06T17:07:00Z", "url": "https://bsky.app/profile/example/post/3029" },
+  { "id": "p30", "username": "@chi_sky", "text": "Shelf cloud approaching from the west.", "disasterType": "Thunderstorm", "latitude": 41.85, "longitude": -87.65, "createdAt": "2025-10-06T17:10:00Z", "url": "https://bsky.app/profile/example/post/3030" },
+
+  { "id": "p31", "username": "@sea_watch", "text": "Moderate rain downtown Seattle.", "disasterType": "Thunderstorm", "latitude": 47.6062, "longitude": -122.3321, "createdAt": "2025-10-06T18:01:00Z", "url": "https://bsky.app/profile/example/post/3031" },
+  { "id": "p32", "username": "@sea_flood", "text": "Water pooling near Pike Place.", "disasterType": "Flood", "latitude": 47.609, "longitude": -122.342, "createdAt": "2025-10-06T18:06:00Z", "url": "https://bsky.app/profile/example/post/3032" },
+  { "id": "p33", "username": "@sea_repeat", "text": "Same curb under water again.", "disasterType": "Flood", "latitude": 47.609, "longitude": -122.342, "createdAt": "2025-10-06T18:08:00Z", "url": "https://bsky.app/profile/example/post/3033" },
+  { "id": "p34", "username": "@tacoma_watch", "text": "Thundercell rolling north.", "disasterType": "Thunderstorm", "latitude": 47.2529, "longitude": -122.4443, "createdAt": "2025-10-06T18:12:00Z", "url": "https://bsky.app/profile/example/post/3034" },
+  { "id": "p35", "username": "@everett_rain", "text": "Brief hail reported in Everett.", "disasterType": "Thunderstorm", "latitude": 47.9789, "longitude": -122.2021, "createdAt": "2025-10-06T18:15:00Z", "url": "https://bsky.app/profile/example/post/3035" },
+
+  { "id": "p36", "username": "@la_quake1", "text": "Short jolt felt near DTLA.", "disasterType": "Earthquake", "latitude": 34.0522, "longitude": -118.2437, "createdAt": "2025-10-06T19:00:00Z", "url": "https://bsky.app/profile/example/post/3036" },
+  { "id": "p37", "username": "@la_quake2", "text": "Hanging lamps swayed ~5 sec.", "disasterType": "Earthquake", "latitude": 34.0522, "longitude": -118.2437, "createdAt": "2025-10-06T19:02:00Z", "url": "https://bsky.app/profile/example/post/3037" },
+  { "id": "p38", "username": "@la_quake3", "text": "Same office: a second weaker shake.", "disasterType": "Earthquake", "latitude": 34.0522, "longitude": -118.2437, "createdAt": "2025-10-06T19:04:00Z", "url": "https://bsky.app/profile/example/post/3038" },
+  { "id": "p39", "username": "@sf_quake", "text": "Mild rolling motion in SoMa.", "disasterType": "Earthquake", "latitude": 37.7749, "longitude": -122.4194, "createdAt": "2025-10-06T19:30:00Z", "url": "https://bsky.app/profile/example/post/3039" },
+  { "id": "p40", "username": "@oak_quake", "text": "Felt it in Oakland too.", "disasterType": "Earthquake", "latitude": 37.8044, "longitude": -122.2712, "createdAt": "2025-10-06T19:32:00Z", "url": "https://bsky.app/profile/example/post/3040" },
+
+  { "id": "p41", "username": "@kc_quake", "text": "Rumble west of downtown—unusual for KC.", "disasterType": "Earthquake", "latitude": 39.0997, "longitude": -94.5786, "createdAt": "2025-10-06T20:05:00Z", "url": "https://bsky.app/profile/example/post/3041" },
+  { "id": "p42", "username": "@kc_aftershock", "text": "Slight aftershock felt.", "disasterType": "Earthquake", "latitude": 39.0997, "longitude": -94.5786, "createdAt": "2025-10-06T20:07:00Z", "url": "https://bsky.app/profile/example/post/3042" },
+  { "id": "p43", "username": "@kc_report", "text": "Cracks in old brick alley.", "disasterType": "Earthquake", "latitude": 39.095, "longitude": -94.58, "createdAt": "2025-10-06T20:10:00Z", "url": "https://bsky.app/profile/example/post/3043" },
+
+  { "id": "p44", "username": "@nash_warn", "text": "Tornado-warned cell approaching I-40.", "disasterType": "Tornado", "latitude": 36.1627, "longitude": -86.7816, "createdAt": "2025-10-06T21:00:00Z", "url": "https://bsky.app/profile/example/post/3044" },
+  { "id": "p45", "username": "@nash_sky", "text": "Green tint to the clouds over Midtown.", "disasterType": "Tornado", "latitude": 36.175, "longitude": -86.79, "createdAt": "2025-10-06T21:03:00Z", "url": "https://bsky.app/profile/example/post/3045" },
+  { "id": "p46", "username": "@nash_shelter", "text": "Basement now—sirens active.", "disasterType": "Tornado", "latitude": 36.1627, "longitude": -86.7816, "createdAt": "2025-10-06T21:05:00Z", "url": "https://bsky.app/profile/example/post/3046" },
+
+  { "id": "p47", "username": "@atl_rain", "text": "Peachtree again underwater.", "disasterType": "Flood", "latitude": 33.7490, "longitude": -84.3880, "createdAt": "2025-10-06T21:40:00Z", "url": "https://bsky.app/profile/example/post/3047" },
+  { "id": "p48", "username": "@atl_thunder", "text": "Thunder nonstop—pets freaking out.", "disasterType": "Thunderstorm", "latitude": 33.755, "longitude": -84.39, "createdAt": "2025-10-06T21:42:00Z", "url": "https://bsky.app/profile/example/post/3048" },
+  { "id": "p49", "username": "@no_la", "text": "French Quarter: water at curbs.", "disasterType": "Flood", "latitude": 29.9511, "longitude": -90.0715, "createdAt": "2025-10-06T21:50:00Z", "url": "https://bsky.app/profile/example/post/3049" },
+  { "id": "p50", "username": "@no_lake", "text": "Lakeview pumps active.", "disasterType": "Flood", "latitude": 30.014, "longitude": -90.12, "createdAt": "2025-10-06T21:52:00Z", "url": "https://bsky.app/profile/example/post/3050" },
+
+  { "id": "p51", "username": "@phx_storm", "text": "Outflow boundary dust + lightning.", "disasterType": "Thunderstorm", "latitude": 33.4484, "longitude": -112.0740, "createdAt": "2025-10-06T22:10:00Z", "url": "https://bsky.app/profile/example/post/3051" },
+  { "id": "p52", "username": "@phx_rain", "text": "Heavy rain downtown, brief flooding.", "disasterType": "Flood", "latitude": 33.45, "longitude": -112.07, "createdAt": "2025-10-06T22:12:00Z", "url": "https://bsky.app/profile/example/post/3052" },
+  { "id": "p53", "username": "@phx_repeat", "text": "Same corner—storm drains overwhelmed.", "disasterType": "Flood", "latitude": 33.45, "longitude": -112.07, "createdAt": "2025-10-06T22:14:00Z", "url": "https://bsky.app/profile/example/post/3053" },
+
+  { "id": "p54", "username": "@bos_thunder", "text": "Thunder offshore, heading in.", "disasterType": "Thunderstorm", "latitude": 42.3601, "longitude": -71.0589, "createdAt": "2025-10-06T23:05:00Z", "url": "https://bsky.app/profile/example/post/3054" },
+  { "id": "p55", "username": "@bos_rain", "text": "Back Bay puddles spreading.", "disasterType": "Flood", "latitude": 42.35, "longitude": -71.08, "createdAt": "2025-10-06T23:08:00Z", "url": "https://bsky.app/profile/example/post/3055" },
+  { "id": "p56", "username": "@dc_rain", "text": "NW DC: curb flow picking up.", "disasterType": "Flood", "latitude": 38.9072, "longitude": -77.0369, "createdAt": "2025-10-06T23:20:00Z", "url": "https://bsky.app/profile/example/post/3056" },
+  { "id": "p57", "username": "@dc_thunder", "text": "Loud crack over the Mall.", "disasterType": "Thunderstorm", "latitude": 38.8899, "longitude": -77.0091, "createdAt": "2025-10-06T23:22:00Z", "url": "https://bsky.app/profile/example/post/3057" },
+  { "id": "p58", "username": "@philly_flood", "text": "Schuylkill path slick, water rising.", "disasterType": "Flood", "latitude": 39.9526, "longitude": -75.1652, "createdAt": "2025-10-06T23:30:00Z", "url": "https://bsky.app/profile/example/post/3058" },
+
+  { "id": "p59", "username": "@char_tstorm", "text": "Crack of thunder in Uptown.", "disasterType": "Thunderstorm", "latitude": 35.2271, "longitude": -80.8431, "createdAt": "2025-10-06T23:45:00Z", "url": "https://bsky.app/profile/example/post/3059" },
+  { "id": "p60", "username": "@raleigh_rain", "text": "Downtown Raleigh: steady rain.", "disasterType": "Thunderstorm", "latitude": 35.7796, "longitude": -78.6382, "createdAt": "2025-10-06T23:50:00Z", "url": "https://bsky.app/profile/example/post/3060" },
+
+  { "id": "p61", "username": "@la_storm", "text": "Ponding along Sunset Blvd yesterday.", "disasterType": "Flood", "latitude": 34.098, "longitude": -118.326, "createdAt": "2025-10-05T10:05:00Z", "url": "https://bsky.app/profile/example/post/3061" },
+  { "id": "p62", "username": "@sf_rain", "text": "Market St slick—use caution.", "disasterType": "Flood", "latitude": 37.7749, "longitude": -122.4194, "createdAt": "2025-10-05T10:10:00Z", "url": "https://bsky.app/profile/example/post/3062" },
+  { "id": "p63", "username": "@oak_rain", "text": "Puddles at Jack London Square.", "disasterType": "Flood", "latitude": 37.795, "longitude": -122.278, "createdAt": "2025-10-05T10:12:00Z", "url": "https://bsky.app/profile/example/post/3063" },
+  { "id": "p64", "username": "@den_thunder", "text": "Thunder over Capitol Hill.", "disasterType": "Thunderstorm", "latitude": 39.7392, "longitude": -104.9903, "createdAt": "2025-10-05T11:00:00Z", "url": "https://bsky.app/profile/example/post/3064" },
+  { "id": "p65", "username": "@den_flood", "text": "Water along Speer Blvd.", "disasterType": "Flood", "latitude": 39.745, "longitude": -105.0, "createdAt": "2025-10-05T11:02:00Z", "url": "https://bsky.app/profile/example/post/3065" },
+  { "id": "p66", "username": "@kc_quake_yday", "text": "Yesterday’s quake rattled kitchenware.", "disasterType": "Earthquake", "latitude": 39.0997, "longitude": -94.5786, "createdAt": "2025-10-05T12:00:00Z", "url": "https://bsky.app/profile/example/post/3066" },
+  { "id": "p67", "username": "@nash_after", "text": "Tree limbs down after warning.", "disasterType": "Tornado", "latitude": 36.1627, "longitude": -86.7816, "createdAt": "2025-10-05T12:05:00Z", "url": "https://bsky.app/profile/example/post/3067" },
+  { "id": "p68", "username": "@atl_after", "text": "Storm drains still clogged.", "disasterType": "Flood", "latitude": 33.7490, "longitude": -84.3880, "createdAt": "2025-10-05T12:10:00Z", "url": "https://bsky.app/profile/example/post/3068" },
+  { "id": "p69", "username": "@no_cleanup", "text": "Quarter cleanup—standing water.", "disasterType": "Flood", "latitude": 29.9511, "longitude": -90.0715, "createdAt": "2025-10-05T12:20:00Z", "url": "https://bsky.app/profile/example/post/3069" },
+  { "id": "p70", "username": "@hou_rain", "text": "Gully-washer off I-10 yesterday.", "disasterType": "Thunderstorm", "latitude": 29.7604, "longitude": -95.3698, "createdAt": "2025-10-05T13:00:00Z", "url": "https://bsky.app/profile/example/post/3070" },
+
+  { "id": "p71", "username": "@sa_rain", "text": "San Antonio Riverwalk splashes onto sidewalks.", "disasterType": "Flood", "latitude": 29.4241, "longitude": -98.4936, "createdAt": "2025-10-05T13:05:00Z", "url": "https://bsky.app/profile/example/post/3071" },
+  { "id": "p72", "username": "@vegas_storm", "text": "Lightning over the Strip.", "disasterType": "Thunderstorm", "latitude": 36.1699, "longitude": -115.1398, "createdAt": "2025-10-05T13:20:00Z", "url": "https://bsky.app/profile/example/post/3072" },
+  { "id": "p73", "username": "@philly_storm", "text": "Yesterday: loud crack near Rittenhouse.", "disasterType": "Thunderstorm", "latitude": 39.9526, "longitude": -75.1652, "createdAt": "2025-10-05T14:00:00Z", "url": "https://bsky.app/profile/example/post/3073" },
+  { "id": "p74", "username": "@nyc_yday", "text": "Drains still sluggish on Houston St.", "disasterType": "Flood", "latitude": 40.723, "longitude": -73.998, "createdAt": "2025-10-05T14:10:00Z", "url": "https://bsky.app/profile/example/post/3074" },
+  { "id": "p75", "username": "@bk_repeat_yday", "text": "Same stoop wet again.", "disasterType": "Flood", "latitude": 40.6782, "longitude": -73.9442, "createdAt": "2025-10-05T14:12:00Z", "url": "https://bsky.app/profile/example/post/3075" },
+
+  { "id": "p76", "username": "@sea_after", "text": "Pike Place gutters cleared.", "disasterType": "Flood", "latitude": 47.609, "longitude": -122.342, "createdAt": "2025-10-05T15:00:00Z", "url": "https://bsky.app/profile/example/post/3076" },
+  { "id": "p77", "username": "@pdx_rain", "text": "Portland drizzle turned squall yesterday.", "disasterType": "Thunderstorm", "latitude": 45.5051, "longitude": -122.6750, "createdAt": "2025-10-05T15:05:00Z", "url": "https://bsky.app/profile/example/post/3077" },
+  { "id": "p78", "username": "@pdx_flood", "text": "Water at Burnside underpass.", "disasterType": "Flood", "latitude": 45.523, "longitude": -122.676, "createdAt": "2025-10-05T15:07:00Z", "url": "https://bsky.app/profile/example/post/3078" },
+  { "id": "p79", "username": "@det_thunder", "text": "Booms over Midtown.", "disasterType": "Thunderstorm", "latitude": 42.3314, "longitude": -83.0458, "createdAt": "2025-10-05T16:00:00Z", "url": "https://bsky.app/profile/example/post/3079" },
+  { "id": "p80", "username": "@minn_rain", "text": "Puddles on Hennepin yesterday.", "disasterType": "Flood", "latitude": 44.9778, "longitude": -93.2650, "createdAt": "2025-10-05T16:05:00Z", "url": "https://bsky.app/profile/example/post/3080" },
+
+  { "id": "p81", "username": "@bos_after", "text": "Back Bay drains unclogged.", "disasterType": "Flood", "latitude": 42.3601, "longitude": -71.0589, "createdAt": "2025-10-05T17:00:00Z", "url": "https://bsky.app/profile/example/post/3081" },
+  { "id": "p82", "username": "@dc_after", "text": "Mall paths mostly dry.", "disasterType": "Flood", "latitude": 38.8899, "longitude": -77.0091, "createdAt": "2025-10-05T17:05:00Z", "url": "https://bsky.app/profile/example/post/3082" },
+  { "id": "p83", "username": "@char_after", "text": "Uptown: branches down.", "disasterType": "Thunderstorm", "latitude": 35.2271, "longitude": -80.8431, "createdAt": "2025-10-05T17:15:00Z", "url": "https://bsky.app/profile/example/post/3083" },
+  { "id": "p84", "username": "@ral_after", "text": "Raleigh: standing water gone.", "disasterType": "Flood", "latitude": 35.7796, "longitude": -78.6382, "createdAt": "2025-10-05T17:20:00Z", "url": "https://bsky.app/profile/example/post/3084" },
+  { "id": "p85", "username": "@hou_clear", "text": "Bayou levels falling.", "disasterType": "Flood", "latitude": 29.7604, "longitude": -95.3698, "createdAt": "2025-10-05T18:00:00Z", "url": "https://bsky.app/profile/example/post/3085" },
+
+  { "id": "p86", "username": "@la_old", "text": "Two days ago: brief shaking in Silver Lake.", "disasterType": "Earthquake", "latitude": 34.1, "longitude": -118.27, "createdAt": "2025-10-04T15:00:00Z", "url": "https://bsky.app/profile/example/post/3086" },
+  { "id": "p87", "username": "@sf_old", "text": "Nob Hill chandeliers swayed a little.", "disasterType": "Earthquake", "latitude": 37.793, "longitude": -122.417, "createdAt": "2025-10-04T15:05:00Z", "url": "https://bsky.app/profile/example/post/3087" },
+  { "id": "p88", "username": "@sea_old_rain", "text": "Two days back: heavy rain midday.", "disasterType": "Thunderstorm", "latitude": 47.6062, "longitude": -122.3321, "createdAt": "2025-10-04T15:10:00Z", "url": "https://bsky.app/profile/example/post/3088" },
+  { "id": "p89", "username": "@phx_old", "text": "Monsoon-style burst two days ago.", "disasterType": "Thunderstorm", "latitude": 33.4484, "longitude": -112.0740, "createdAt": "2025-10-04T15:12:00Z", "url": "https://bsky.app/profile/example/post/3089" },
+  { "id": "p90", "username": "@bos_old", "text": "Two days ago: harbor squall.", "disasterType": "Thunderstorm", "latitude": 42.3601, "longitude": -71.0589, "createdAt": "2025-10-04T15:15:00Z", "url": "https://bsky.app/profile/example/post/3090" },
+
+  { "id": "p91", "username": "@nyc_old_flood", "text": "Saturday: SoHo grates overflowed.", "disasterType": "Flood", "latitude": 40.723, "longitude": -73.998, "createdAt": "2025-10-04T16:00:00Z", "url": "https://bsky.app/profile/example/post/3091" },
+  { "id": "p92", "username": "@bk_old", "text": "Bushwick corner flooded briefly.", "disasterType": "Flood", "latitude": 40.694, "longitude": -73.921, "createdAt": "2025-10-04T16:05:00Z", "url": "https://bsky.app/profile/example/post/3092" },
+  { "id": "p93", "username": "@dc_old", "text": "Mall had standing water in spots.", "disasterType": "Flood", "latitude": 38.8899, "longitude": -77.0091, "createdAt": "2025-10-04T16:10:00Z", "url": "https://bsky.app/profile/example/post/3093" },
+  { "id": "p94", "username": "@chi_old", "text": "Two days back: strong gust front.", "disasterType": "Thunderstorm", "latitude": 41.8781, "longitude": -87.6298, "createdAt": "2025-10-04T16:20:00Z", "url": "https://bsky.app/profile/example/post/3094" },
+  { "id": "p95", "username": "@det_old", "text": "Brief power outage Saturday.", "disasterType": "Thunderstorm", "latitude": 42.3314, "longitude": -83.0458, "createdAt": "2025-10-04T16:25:00Z", "url": "https://bsky.app/profile/example/post/3095" },
+
+  { "id": "p96", "username": "@hou_old", "text": "Bayou topped banks in places.", "disasterType": "Flood", "latitude": 29.7604, "longitude": -95.3698, "createdAt": "2025-10-04T17:00:00Z", "url": "https://bsky.app/profile/example/post/3096" },
+  { "id": "p97", "username": "@sa_old", "text": "Two days ago: standing water by Riverwalk.", "disasterType": "Flood", "latitude": 29.4241, "longitude": -98.4936, "createdAt": "2025-10-04T17:05:00Z", "url": "https://bsky.app/profile/example/post/3097" },
+  { "id": "p98", "username": "@pdx_old", "text": "Storm line moved through quickly.", "disasterType": "Thunderstorm", "latitude": 45.5051, "longitude": -122.6750, "createdAt": "2025-10-04T17:10:00Z", "url": "https://bsky.app/profile/example/post/3098" },
+  { "id": "p99", "username": "@sea_older", "text": "Two days ago, loud thunder downtown.", "disasterType": "Thunderstorm", "latitude": 47.6062, "longitude": -122.3321, "createdAt": "2025-10-04T17:15:00Z", "url": "https://bsky.app/profile/example/post/3099" },
+  { "id": "p100","username": "@la_older", "text": "Felt a tiny shaker in the Valley.", "disasterType": "Earthquake", "latitude": 34.2, "longitude": -118.45, "createdAt": "2025-10-04T17:20:00Z", "url": "https://bsky.app/profile/example/post/3100" }
 ]
