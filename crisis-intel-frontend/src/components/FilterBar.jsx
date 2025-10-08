@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 
-export default function FilterBar({ onApply, onClear }) {
+export default function FilterBar({ types = [], onApply, onClear }) {
   const formRef = useRef(null);
 
   function handleSubmit(e) {
@@ -11,20 +11,17 @@ export default function FilterBar({ onApply, onClear }) {
       location: (fd.get('location') || '').trim(),
       timeWindowHours: fd.get('timeWindowHours') || ''
     };
-    onApply?.(values); // parent applies + closes
+    onApply?.(values);
   }
 
-  //clear filter values
+  // clear filter values
   function handleClear() {
-    // Reset the UI fields
     if (formRef.current) {
       formRef.current.reset();
-  
       formRef.current.type.value = '';
       formRef.current.location.value = '';
       formRef.current.timeWindowHours.value = '';
     }
-
     onApply?.({ type: '', location: '', timeWindowHours: '' });
     onClear?.();
   }
@@ -35,10 +32,9 @@ export default function FilterBar({ onApply, onClear }) {
         <label htmlFor="type">Type of disaster</label>
         <select id="type" name="type" className="input" defaultValue="">
           <option value="">Any</option>
-          <option value="Tornado">Tornado</option>
-          <option value="Flood">Flood</option>
-          <option value="Earthquake">Earthquake</option>
-          <option value="Thunderstorm">Thunderstorm</option>
+          {types.map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
         </select>
       </div>
 
