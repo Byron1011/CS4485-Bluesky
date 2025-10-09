@@ -2,22 +2,28 @@
 
 ## Setup
 
+
+
+
+### 0.1 Install Node dependencies
+    npm install
+
+### 0.2 Install Frontend dependencies
+    cd frontend
+    npm install
+
+### 0.3 Install Python dependencies
+    python install -r requirement.txt
+
 ### 1. Create '.env' in project root
     
     PORT=3000   
     MONGO_URI=mongodb+srv://<USER>:<PASS>@<CLUSTER>.mongodb.net/<DB>
 
-### 2. Run the server
+### 2 Run Flask server
+    python label_service.py
+
+### 3. Run the Node.JS server
     node index.js
 
-### if connected, you will see logs like:
-    Connected to DB
-    Server: http://localhost:3000
-    Search & Save: /search-save?q=<disaster type>&limit=<~100>
-    List: /posts?type=<disaster type>&from=<date>T00:00Z&to=<date>T23:59:59.999Z
-
-#### Then, open the browser with http://localhost:3000
-#### you can search and save with 
-    /search-save?q=<disaster type>&limit=<~100>
-#### Then, you can reads from MONGODB with filter by typing 
-    /posts?type=<disaster type>&from=<date>T00:00Z&to=<date>T23:59:59.999Z 
+### Go to : "http://localhost:3000/" to visit the dashboard
