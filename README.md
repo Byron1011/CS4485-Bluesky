@@ -8,7 +8,7 @@
 ### 0.1 Install Node dependencies
     npm install
 
-### 0.2 Install Frontend dependencies
+### 0.2 Install Frontend dependencies (don't forget to then go back to root directory)
     cd frontend
     npm install
 
