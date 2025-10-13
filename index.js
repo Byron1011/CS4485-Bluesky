@@ -112,7 +112,11 @@ function normalizeType(s) {
 const normalize_DB = (p,seedType) => ({
   postId: p?.uri,
   text: p?.record?.text ?? '',
-  createdAt: p?.record?.createdAt, 
+  createdAt: p?.record?.createdAt,
+  author: p?.author?.displayName?.trim()
+     || p?.author?.handle?.trim()
+     || p?.author?.did?.trim()
+     || 'unknown',
    labels: {
     disasterType: normalizeType(seedType)
   },
@@ -207,6 +211,7 @@ app.get('/search-save', async (req, res) => {
           update: {
           $set: {
             text: doc.text,
+            author: doc.author,
             createdAt: doc.createdAt,
             labels: doc.labels,
             seedType: doc.seedType,
@@ -317,6 +322,8 @@ async function add_coordinates(raw_posts){
 
 }
 
+
+
 //filtered search from db
 app.get('/posts', async (req, res) => {
   try {
@@ -345,6 +352,7 @@ app.get('/posts', async (req, res) => {
           postId: 1,
           text: 1,
           createdAt: 1,
+          author: 1,
           disasterType: '$labels.disasterType',
           coordinates: 1,
         }
