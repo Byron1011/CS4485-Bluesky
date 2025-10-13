@@ -23,6 +23,8 @@ const ResourceSchema = new mongoose.Schema({
         type: String
     },
     
+    author: { type: String, index: true, required: true },
+
     location: {
         type: {
             type: String,
