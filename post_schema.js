@@ -9,6 +9,9 @@ const postSchema = new mongoose.Schema ({
 
     //posted time
     createdAt : {type: Date, index: true, required: true},
+    
+    //author of post
+    author: { type: String, index: true, required: true },
 
     //label for classification ( add more labels later [servirity, location] )
     labels: {
