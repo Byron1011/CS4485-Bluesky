@@ -4,6 +4,7 @@ import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import Post from './post_schema.js';
+import Resource from "./resource_schema.js";
 
 const app = express();
 const PORT = process.env.PORT;
@@ -166,6 +167,27 @@ async function fetchSearch({ q, limit = 10, cursor }) {
   throw e;
 }
 
+
+app.get("/resources", async(req, res) => {
+  // will be provided long + lat in request, query DB and serve resources that are within a certian threshold
+  // of those coordinates
+
+  console.log(req.query);
+
+  const resources = await Resource.find({
+  location: {
+    $near: {
+      $geometry: { type: "Point", coordinates: [Number(req.query.long), Number(req.query.lat)] },
+      $maxDistance: Number(req.query.radius * 1609.34) // meters to miles
+    }
+  }
+  });
+
+  console.log("at least I got here");
+  console.log(resources);
+  res.json({resources});
+
+});
 
 //**********************************************
 //Search and Save to db

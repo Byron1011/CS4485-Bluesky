@@ -2,6 +2,8 @@ import './App.css';
 import MapView from './components/MapView';
 import FilterBar from './components/FilterBar';
 import PostList from './components/PostList';
+import ResourcesDisplay from "./components/ResourcesDisplay";
+
 
 // will depreciate, working on using dynamic data
 // import postsData from './data/posts.json';
@@ -21,6 +23,80 @@ function About() {
       <Link to="/">Go back to Dashboard</Link>
     </div>
   );
+}
+
+
+
+function Resources() {
+
+    const [lng, setLng] = useState("");
+  const [lat, setLat] = useState("");
+  const [resources, setResources] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  async function fetchResources(e) {
+    e.preventDefault();
+    if (!lng || !lat) {
+      alert("Please enter both longitude and latitude.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+
+      console.log(lng);
+      console.log(lat);
+
+      const RADIUS = 10;
+
+      const res = await fetch(`/resources?long=${lng}&lat=${lat}&radius=${RADIUS}`
+      );
+
+      
+
+      const data = await res.json();
+
+      console.log(data.resources);
+
+      setResources(data.resources);
+    } catch (err) {
+      console.error("Error fetching resources:", err);
+      alert("Failed to fetch resources.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+    return (
+      <div>
+
+      <form onSubmit={fetchResources}>
+        <label>
+          Longitude:
+          <input
+            type="number"
+            step="any"
+            value={lng}
+            onChange={(e) => setLng(e.target.value)}
+          />
+        </label>
+        <label style={{ marginLeft: "1em" }}>
+          Latitude:
+          <input
+            type="number"
+            step="any"
+            value={lat}
+            onChange={(e) => setLat(e.target.value)}
+          />
+        </label>
+        <button type="submit">Fetch Resources</button>
+      </form>
+
+      <ResourcesDisplay resources={ resources } />
+
+      </div>
+      
+    )
 }
 
 // Given a list of posts, show them (with heatmap, )
@@ -174,6 +250,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/about" element={<About />} />
+        <Route path="/testResources" element = {<Resources />} />
       </Routes>
     </Router>
   );
