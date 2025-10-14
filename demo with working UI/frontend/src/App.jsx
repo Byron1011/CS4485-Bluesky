@@ -379,6 +379,7 @@ function Dashboard() {
   };
 
   const onShowResourcesFromPost = (post) => {
+    console.log('[onShowResourcesFromPost] post:', post);
     if (!Number.isFinite(post.lat) || !Number.isFinite(post.lng)) {
       showToast('That post has no coordinates.');
       return;
