@@ -6,12 +6,41 @@ import mongoose from 'mongoose';
 import Post from './post_schema.js';
 import Resource from "./resource_schema.js";
 
+// For use of cookies
+import cookieParser from 'cookie-parser';
+
+
+
 const app = express();
 const PORT = process.env.PORT;
 const PYTHON_PORT = process.env.PYTHON_PORT;
 
 import path from "path";
 import { fileURLToPath } from "url";
+
+// use cookie parser middleware
+app.use(cookieParser());
+
+// CUSTOM MIDDLEWARE that ensures the dark_theme attribute always exists (false by default).
+// Note, not an actual boolean but a string
+app.use((req, res, next) => {
+  if(!req.cookies.dark_theme) {
+    
+    res.cookie("dark_theme", "false", {
+      maxAge : 1000 * 60 * 60 * 24 * 365, // 1 year
+      httpOnly: false,
+      sameSite: "lax"
+    });
+
+    req.cookies.dark_theme = "false";
+
+  }
+
+  console.log(req.cookies.dark_theme);
+
+  next();
+});
+
 
 app.use(cors());
 
