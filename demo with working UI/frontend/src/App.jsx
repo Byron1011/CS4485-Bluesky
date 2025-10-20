@@ -398,23 +398,32 @@ function Dashboard() {
       setResourcesOpen(true);
       setResourcesLoading(true);
       setResourcesError(null);
-      const res = await fetch(`/resources/near?lat=${lat}&lng=${lng}&radiusMi=${radiusMi}`);
+      const res = await fetch(`/resources?lat=${lat}&long=${lng}&radius=${radiusMi}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      const mapped = (Array.isArray(data) ? data : []).map((r) => ({
-        id: r._id || r.id,
-        name: r.name || 'Unknown resource',
-        type: r.type || 'resource',
-        address: r.address || '',
-        city: r.city || '',
-        state: r.state || '',
-        phone: r.phone || '',
-        website: r.website || '',
-        miles: r.location?.coordinates
-          ? milesBetween(lat, lng, r.location.coordinates[1], r.location.coordinates[0])
-          : null,
-      }));
-      setResources(mapped);
+
+      console.log(data);
+
+
+      // map not working and also not necessary (I think)
+
+      // const mapped = (Array.isArray(data) ? data : []).map((r) => ({
+      //   id: r._id || r.id,
+      //   name: r.name || 'Unknown resource',
+      //   type: r.type || 'resource',
+      //   address: r.address || '',
+      //   city: r.city || '',
+      //   state: r.state || '',
+      //   phone: r.phone || '',
+      //   website: r.website || '',
+      //   miles: r.location?.coordinates
+      //     ? milesBetween(lat, lng, r.location.coordinates[1], r.location.coordinates[0])
+      //     : null,
+      // }));
+
+      // console.log(mapped);
+
+      setResources(data.resources);
     } catch (err) {
       setResourcesError(err.message);
     } finally {

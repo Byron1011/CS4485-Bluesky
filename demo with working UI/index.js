@@ -203,15 +203,18 @@ app.get("/resources", async(req, res) => {
   // will be provided long + lat in request, query DB and serve resources that are within a certian threshold
   // of those coordinates
 
+  console.log("wag1");
 
   const resources = await Resource.find({
   location: {
     $near: {
       $geometry: { type: "Point", coordinates: [Number(req.query.long), Number(req.query.lat)] },
-      $maxDistance: Number(req.query.radius * 1609.34) // meters to miles
+      $maxDistance: Number(req.query.radius * 1609.34) // miles to meters
     }
   }
   });
+
+  console.log(resources);
 
   res.json({resources});
 
@@ -412,7 +415,6 @@ app.get('/posts', async (req, res) => {
       Post.aggregate([{ $match: q }, { $count: 'total' }])
     ]);
 
-    console.log("almost at the end");
 
     const plainResults = JSON.parse(JSON.stringify(results));
 
