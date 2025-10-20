@@ -765,3 +765,7 @@ body {
   background-color: black;
   color: white;
 }
+
+.clicked {
+  background-color: grey;
+}

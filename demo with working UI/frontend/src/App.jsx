@@ -52,9 +52,10 @@ function normalizeApiResults(apiRows) {
     const disasterType = extractType(r);
     const coords = Array.isArray(r?.coordinates) ? r.coordinates : [];
 
+
     if (!coords.length) {
       out.push({
-        id: r.postId,
+        id: r._id,
         postId: r.postId,
         username: "",
         text: r.text ?? "",
@@ -208,12 +209,10 @@ function Dashboard() {
   useEffect(() => {
     const preference = Cookies.get("dark_theme");
     if(preference === "false"){ // NOTE: cookies use string key-value pairs so it is NOT a boolean
-      console.log("user prefers light theme");
       setDarkTheme(false);
 
 
     } else if (preference === "true"){
-      console.log("User prefers dark theme");
       setDarkTheme(true);
 
 
@@ -402,7 +401,6 @@ function Dashboard() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 
-      console.log(data);
 
 
       // map not working and also not necessary (I think)
