@@ -4,6 +4,8 @@ import FilterBar from './components/FilterBar';
 import PostList from './components/PostList';
 import ResourcesDisplay from "./components/ResourcesDisplay";
 
+// FOR DARK THEME
+import Cookies from 'js-cookie';
 
 // will depreciate, working on using dynamic data
 // import postsData from './data/posts.json';
@@ -101,15 +103,66 @@ function Resources() {
 
 // Given a list of posts, show them (with heatmap, )
 function Dashboard() {
+
+
   const [search, setSearch] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState(null);
   const [filters, setFilters] = useState({ type: '', location: '', timeWindowHours: '' });
 
+  // FOR DARK THEME
+  const [darkTheme, setDarkTheme] = useState(false);
+
   // New stuff, for use in dynamically loading data (rather than reading from JSON file)
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+
+  // FOR DARK THEME
+  // read cookie to set theme
+  useEffect(() => {
+    const preference = Cookies.get("dark_theme");
+    if(preference === "false"){ // NOTE: cookies use string key-value pairs so it is NOT a boolean
+      console.log("user prefers light theme");
+      setDarkTheme(false);
+
+
+    } else if (preference === "true"){
+      console.log("User prefers dark theme");
+      setDarkTheme(true);
+
+
+
+    } else {
+      console.log("COULD NOT GET USER PREFERENCE");
+    }
+  }, []);
+
+  const toggleTheme = () => {
+
+    // set cookie so preference is remembered
+    var pref = "true";
+
+    if (darkTheme) { // switch to false
+      pref = "false";
+
+    }
+
+
+    
+    Cookies.set("dark_theme", pref, {
+      expires: 365,
+      path: "/"
+    });
+
+    console.log("preference changed");
+
+    // change state
+    setDarkTheme(!darkTheme);
+  };
+
+  
 
   // fetch posts from backend
   useEffect(() => {
@@ -191,13 +244,18 @@ console.log("Raw filteredPosts sample:", filteredPosts.length, filteredPosts.sli
 
 
   return (
-    <div className="app">
+    <div className={`app ${ darkTheme ? "dark-theme" : ""}`}>
       <header>
         <h1 className="page-title">Crisis & Disaster Dashboard</h1>
         <nav>
           <Link to="/about">About</Link>
         </nav>
       </header>
+
+      {/* FOR DARK THEME */}
+      <h2>{ darkTheme ? "Dark Theme" : "Light Theme"}
+      </h2>
+      <button onClick={toggleTheme}>{darkTheme ? "Switch to Light" : "Switch to Dark"}</button>
 
       <button className="btn filter-toggle" onClick={() => setFiltersOpen(o => !o)}>
         <FaBars size={18} />
