@@ -3,17 +3,23 @@
 from flask import Flask, request, jsonify
 import spacy
 import time
+import os, ssl, certifi
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 
 app = Flask(__name__)
+
+# Set up SSL context to use certificate to avoid SSL errors
+os.environ["SSL_CERT_FILE"] = certifi.where()
+os.environ["REQUESTS_CA_BUNDLE"] = certifi.where()
+ssl_ctx = ssl.create_default_context(cafile=certifi.where())
 
 
 # Load SpaCy model, figures out what part of the text is about a location
 ner_model = spacy.load("en_core_web_sm")
 
 # Geocode with Nominatim, maps names of locations to their coordinates
-geolocator = Nominatim(user_agent="geo_demo", timeout=100)
+geolocator = Nominatim(user_agent="geo_demo", timeout=100, ssl_context=ssl_ctx)
 
 @app.route("/ner", methods=["POST"])
 def ner():
