@@ -10,6 +10,9 @@ import ResourcesPanel from './components/ResourcesPanel';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
+// FOR DARK THEME
+import Cookies from 'js-cookie';
+
 const KNOWN_TYPES = new Set([
   'earthquake','tornado','flood','thunderstorm','wildfire','hurricane',
   'tsunami','landslide','blizzard','drought','volcano','cyclone',
@@ -167,6 +170,10 @@ function Dashboard() {
   const [search, setSearch] = useState("");
   const [selectedPostId, setSelectedPostId] = useState(null);
 
+  // FOR DARK THEME
+    const [darkTheme, setDarkTheme] = useState(false);
+
+
   // Filters
   const [filters, setFilters] = useState({
     types: [],
@@ -196,6 +203,48 @@ function Dashboard() {
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     };
   }, []);
+
+  // read cookie to set theme
+  useEffect(() => {
+    const preference = Cookies.get("dark_theme");
+    if(preference === "false"){ // NOTE: cookies use string key-value pairs so it is NOT a boolean
+      console.log("user prefers light theme");
+      setDarkTheme(false);
+
+
+    } else if (preference === "true"){
+      console.log("User prefers dark theme");
+      setDarkTheme(true);
+
+
+
+    } else {
+      console.log("COULD NOT GET USER PREFERENCE");
+    }
+  }, []);
+
+  const toggleTheme = () => {
+  
+      // set cookie so preference is remembered
+      var pref = "true";
+  
+      if (darkTheme) { // switch to false
+        pref = "false";
+  
+      }
+  
+  
+      
+      Cookies.set("dark_theme", pref, {
+        expires: 365,
+        path: "/"
+      });
+  
+      console.log("preference changed");
+  
+      // change state
+      setDarkTheme(!darkTheme);
+    };
 
   // fetch ALL posts on mount
   useEffect(() => {
@@ -409,7 +458,13 @@ function Dashboard() {
 
   return (
     <>
-      <div className="app">
+      <div className={`app ${ darkTheme ? "dark-theme" : ""}`}>
+
+      {/* FOR DARK THEME */}
+      <h2>{ darkTheme ? "Dark Theme" : "Light Theme"}
+      </h2>
+      <button onClick={toggleTheme}>{darkTheme ? "Switch to Light" : "Switch to Dark"}</button>
+
 
         <section className="main-grid">
           {/* left posts */}

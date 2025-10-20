@@ -1,9 +1,14 @@
-
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import Post from './post_schema.js';
+import Resource from "./resource_schema.js";
+
+// For use of cookies
+import cookieParser from 'cookie-parser';
+
+
 
 const app = express();
 const PORT = process.env.PORT;
@@ -11,6 +16,29 @@ const PYTHON_PORT = process.env.PYTHON_PORT;
 
 import path from "path";
 import { fileURLToPath } from "url";
+
+// use cookie parser middleware
+app.use(cookieParser());
+
+// CUSTOM MIDDLEWARE that ensures the dark_theme attribute always exists (false by default).
+// Note, not an actual boolean but a string
+app.use((req, res, next) => {
+  if(!req.cookies.dark_theme) {
+    
+    res.cookie("dark_theme", "false", {
+      maxAge : 1000 * 60 * 60 * 24 * 365, // 1 year
+      httpOnly: false,
+      sameSite: "lax"
+    });
+
+    req.cookies.dark_theme = "false";
+
+  }
+
+
+  next();
+});
+
 
 app.use(cors());
 
@@ -112,7 +140,11 @@ function normalizeType(s) {
 const normalize_DB = (p,seedType) => ({
   postId: p?.uri,
   text: p?.record?.text ?? '',
-  createdAt: p?.record?.createdAt, 
+  createdAt: p?.record?.createdAt,
+  author: p?.author?.displayName?.trim()
+     || p?.author?.handle?.trim()
+     || p?.author?.did?.trim()
+     || 'unknown',
    labels: {
     disasterType: normalizeType(seedType)
   },
@@ -167,6 +199,24 @@ async function fetchSearch({ q, limit = 10, cursor }) {
 }
 
 
+app.get("/resources", async(req, res) => {
+  // will be provided long + lat in request, query DB and serve resources that are within a certian threshold
+  // of those coordinates
+
+
+  const resources = await Resource.find({
+  location: {
+    $near: {
+      $geometry: { type: "Point", coordinates: [Number(req.query.long), Number(req.query.lat)] },
+      $maxDistance: Number(req.query.radius * 1609.34) // meters to miles
+    }
+  }
+  });
+
+  res.json({resources});
+
+});
+
 //**********************************************
 //Search and Save to db
 app.get('/search-save', async (req, res) => {
@@ -207,6 +257,7 @@ app.get('/search-save', async (req, res) => {
           update: {
           $set: {
             text: doc.text,
+            author: doc.author,
             createdAt: doc.createdAt,
             labels: doc.labels,
             seedType: doc.seedType,
@@ -317,6 +368,8 @@ async function add_coordinates(raw_posts){
 
 }
 
+
+
 //filtered search from db
 app.get('/posts', async (req, res) => {
   try {
@@ -345,6 +398,7 @@ app.get('/posts', async (req, res) => {
           postId: 1,
           text: 1,
           createdAt: 1,
+          author: 1,
           disasterType: '$labels.disasterType',
           coordinates: 1,
         }
@@ -374,4 +428,3 @@ app.get('/posts', async (req, res) => {
 app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, "frontend/dist", "index.html"));
 });
-

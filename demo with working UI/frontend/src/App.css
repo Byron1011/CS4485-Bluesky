@@ -760,3 +760,8 @@ body {
 .main-grid > .col:first-child .col-body {
   height: var(--map-h);
 }
+
+.dark-theme {
+  background-color: black;
+  color: white;
+}
