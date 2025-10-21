@@ -468,10 +468,10 @@ function Dashboard() {
       <div className={`app ${ darkTheme ? "dark-theme" : ""}`}>
 
       {/* FOR DARK THEME */}
-      <h2>{ darkTheme ? "Dark Theme" : "Light Theme"}
-      </h2>
-      <button onClick={toggleTheme}>{darkTheme ? "Switch to Light" : "Switch to Dark"}</button>
+      <div style={{ display: "flex", justifyContent:"end", alignItems: "center"}}>
+        <button class="theme-button" onClick={toggleTheme}>{darkTheme ? "Switch to Light" : "Switch to Dark"}</button>
 
+        </div>
 
         <section className="main-grid">
           {/* left posts */}

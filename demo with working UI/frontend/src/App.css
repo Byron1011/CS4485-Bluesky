@@ -1,7 +1,6 @@
 :root{
   /*Color System */
   --bg: #f7f9fc;               /* app background */
-  --card: #ffffff;             /* surface/cards */
   --text: #0f172a;             
   --muted: #475569;           
   --muted-2: #64748b;          
@@ -219,7 +218,6 @@ body {
   overflow: auto;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: var(--card);
   padding: 16px;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
@@ -245,7 +243,6 @@ body {
   padding: 10px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: var(--card);
   transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease, background-color 120ms ease;
   box-shadow: 0 1px 6px rgba(15, 23, 42, 0.04);
 }
@@ -335,7 +332,6 @@ body {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   overflow: hidden;
-  background: var(--card);
   width: 100%;
   max-width: 100%;
   box-shadow: var(--shadow-sm);
@@ -667,7 +663,6 @@ body {
   margin: 8px 0 16px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: var(--card);
   box-shadow: var(--shadow-sm);
   padding: 10px 12px;
   max-height: 260px;         
@@ -768,4 +763,8 @@ body {
 
 .clicked {
   background-color: grey;
+}
+
+.theme-button {
+  width: fit-content;
 }

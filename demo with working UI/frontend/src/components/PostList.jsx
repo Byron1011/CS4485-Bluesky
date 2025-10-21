@@ -98,7 +98,7 @@ export default function PostList({ posts = [], selectedPostId = null, onSelectPo
                     // Rebuild tag depending on new value
                     if (p.userRating > 0) {
                       ratingTag.innerHTML = `<span style="color: green; font-weight: bold;">
-    Reviewed by ${p.userRating} users
+    Verified by ${p.userRating} users
   </span>`;
                     } else if (p.userRating < 0) {
                       ratingTag.innerHTML = `<span style="color: red; font-weight: bold;">
