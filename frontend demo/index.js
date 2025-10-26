@@ -425,6 +425,48 @@ app.get('/posts', async (req, res) => {
   }
 });
 
+// Top 5 disaster types by post count
+app.get('/analytics/top-types', async (req, res) => {
+  try {
+    const results = await Post.aggregate([
+      {
+        $group: {
+          _id: "$labels.disasterType",
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } },
+      { $limit: 5 }
+    ]);
+
+    res.json(results);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "server_error" });
+  }
+});
+
+app.get("/analytics/posts-over-time", async (req, res) => {
+  try {
+    const results = await Post.aggregate([
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    res.json(results);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "server_error" });
+  }
+});
+
 
 // serve react index file for all other requests not handled
 app.get(/.*/, (req, res) => {
