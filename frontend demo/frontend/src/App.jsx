@@ -6,6 +6,7 @@ import Topbar from './components/TopBar';
 import SummaryBar from './components/SummaryBar';
 import DateRangePicker from './components/DateRangePicker';
 import ResourcesPanel from './components/ResourcesPanel';
+import Analytics from './components/Analytics';
 import Cookies from 'js-cookie';
 import logoUrl from './assets/logo.png';
 
@@ -147,7 +148,7 @@ function TopDisastersChart() {
   );
 }
 
-
+//old graphs
 function PostsOverTime() {
   const [data, setData] = useState([]);
 
@@ -194,7 +195,7 @@ function About() {
     </>
   );
 }
-
+///end of old about page an graphs
 //fetch every post on page
 async function fetchAllPosts({ withCoords = false } = {}) {
   const PAGE_SIZE = 200;
@@ -711,7 +712,7 @@ export default function App() {
       <Topbar />
       <Routes>
         <Route path="/" element={<Dashboard />} />
-        <Route path="/about" element={<About />} />
+        <Route path="/analytics" element={<Analytics />} />
       </Routes>
     </Router>
   );
