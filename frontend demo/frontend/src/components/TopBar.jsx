@@ -23,10 +23,10 @@ export default function Topbar({ lastUpdated, onRefresh }) {
           Dashboard
         </NavLink>
         <NavLink
-          to="/about"
+          to="/analytics"
           className={({ isActive }) => `toplink ${isActive ? 'active' : ''}`}
         >
-          About
+          Analytics
         </NavLink>
       </nav>
 
@@ -35,4 +35,6 @@ export default function Topbar({ lastUpdated, onRefresh }) {
       </div>
     </header>
   );
+}
+
 }
