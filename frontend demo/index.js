@@ -467,6 +467,193 @@ app.get("/analytics/posts-over-time", async (req, res) => {
   }
 });
 
+// Countries with most disasters (by posts)
+app.get('/analytics/top-countries-over-time', async (req, res) => {
+  try {
+    const limit = Math.max(1, Math.min(Number(req.query.limit) || 5, 12));
+    const days  = Number(req.query.days) || null;
+
+    //use existing labeled country fields
+    const monthly = await Post.aggregate([
+      {
+        $addFields: {
+          _countryKey: {
+            $ifNull: [
+              { $ifNull: ["$labels.country", { $ifNull: ["$labels.location.country", "$labels.location.countryName"] }] },
+              { $ifNull: ["$country", "$countryName"] }
+            ]
+          },
+          _day: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }
+        }
+      },
+      { $match: { _countryKey: { $ne: null, $ne: "", $ne: "unknown" } } },
+      { $group: { _id: { day: "$_day", country: "$_countryKey" }, count: { $sum: 1 } } },
+      { $project: { _id: 0, bucket: "$_id.day", country: "$_id.country", count: 1 } }
+    ]);
+
+    if (monthly.length) {
+      //filter by last N days
+      let filtered = monthly;
+      if (days) {
+        const cutoff = new Date(); cutoff.setUTCDate(cutoff.getUTCDate() - days);
+        filtered = monthly.filter(r => new Date(r.bucket) >= cutoff);
+      }
+      const totals = new Map();
+      for (const r of filtered) totals.set(r.country, (totals.get(r.country) || 0) + r.count);
+      const top = Array.from(totals.entries())
+                  .filter(([c]) => c && c !== "unknown")
+                  .sort((a,b)=>b[1]-a[1])
+                  .slice(0, limit)
+                  .map(([c])=>c);
+      const topSet = new Set(top);
+      return res.json(filtered.filter(r => topSet.has(r.country)));
+    }
+
+    //compute country from coordinates if labels are missing
+    const match = {};
+    if (days) {
+      const cutoff = new Date(); cutoff.setUTCDate(cutoff.getUTCDate() - days);
+      match.createdAt = { $gte: cutoff };
+    }
+
+    // pull whats needed
+    const docs = await Post.find(match, {
+      createdAt: 1,
+      labels: 1,
+      country: 1,
+      countryName: 1,
+      coordinates: 1,
+      _id: 0
+    }).lean();
+
+    // simple bbox country guesser
+    const BOXES = [
+      ["United States",   24.5, 49.5, -125, -66],
+      ["Canada",          41.7, 83.1, -141, -52],
+      ["Mexico",          14.5, 32.7, -118, -86],
+      ["Brazil",         -34.0,  6.0,  -74, -34],
+      ["United Kingdom",  49.9, 60.9,  -8.7, 1.8],
+      ["France",          41.3, 51.2,  -5.5, 9.6],
+      ["Germany",         47.2, 55.1,   5.5, 15.5],
+      ["Spain",           36.0, 43.8,  -9.5, 3.5],
+      ["Italy",           36.5, 47.3,   6.6, 18.6],
+      ["India",            6.5, 35.7,  68.1, 97.4],
+      ["China",           18.0, 53.6,  73.5,134.8],
+      ["Japan",           24.0, 46.0, 123.0,146.0],
+      ["South Korea",     33.0, 38.8, 124.6,131.9],
+      ["Australia",      -44.0,-10.0, 112.9,154.0],
+      ["New Zealand",    -47.7,-34.3, 166.0,179.0],
+      ["South Africa",   -35.0,-22.0,  16.0, 33.0],
+      ["Russia",          41.2, 81.9,  19.6,180.0],
+      ["Turkey",          35.8, 42.1,  26.0, 45.0],
+      ["Indonesia",      -11.0,  6.1,  95.0,141.0],
+      ["Philippines",      4.6, 21.1, 116.9,126.6],
+    ];
+    const inBox = (lat, lng, b) =>
+      lat >= b[1] && lat <= b[2] && lng >= b[3] && lng <= b[4];
+
+    const num = (v) => (v == null ? null : (typeof v === "string" ? parseFloat(v) : v));
+    const takePair = (val) => {
+      if (!val) return null;
+
+      if (typeof val === "object" && !Array.isArray(val) && Array.isArray(val.coordinates) && val.coordinates.length >= 2) {
+        const A = num(val.coordinates[0]);
+        const B = num(val.coordinates[1]);
+      return (Number.isFinite(A) && Number.isFinite(B)) ? { a: A, b: B } : null; // a=lng, b=lat
+      }
+
+      if (Array.isArray(val) && Array.isArray(val[0])) {
+      const A = num(val[0][0]); const B = num(val[0][1]);
+      return (Number.isFinite(A) && Number.isFinite(B)) ? { a: A, b: B } : null;
+      }
+
+      if (Array.isArray(val) && val.length >= 2) {
+      const A = num(val[0]); const B = num(val[1]);
+      return (Number.isFinite(A) && Number.isFinite(B)) ? { a: A, b: B } : null;
+      }
+
+      return null;
+    };
+
+    const guessCountry = (doc) => {
+      const labeled =
+        doc?.labels?.country ??
+        doc?.labels?.location?.country ??
+        doc?.labels?.location?.countryName ??
+        doc?.country ?? doc?.countryName;
+      if (labeled && String(labeled).trim()) return String(labeled).trim();
+
+      const pair = takePair(doc.coordinates);
+      if (!pair) return null;
+      const candidates = [
+        [pair.a, pair.b],        // lat, lng
+        [pair.b, pair.a],        // lng, lat
+      ];
+      for (const [lat, lng] of candidates) {
+        for (const box of BOXES) {
+          if (inBox(lat, lng, box)) return box[0];
+        }
+      }
+      return null;
+    };
+
+    // Map-reduce: key by day+country
+    const counts = new Map(); 
+    const totals = new Map(); 
+    for (const d of docs) {
+      const day = new Date(d.createdAt);
+      if (Number.isNaN(day.getTime())) continue;
+      const dayKey = day.toISOString().slice(0,10); // YYYY-MM-DD
+      const ctry = guessCountry(d);
+      if (!ctry) continue;
+
+      const k = `${dayKey}|${ctry}`;
+      counts.set(k, (counts.get(k) || 0) + 1);
+      totals.set(ctry, (totals.get(ctry) || 0) + 1);
+    }
+
+    const top = Array.from(totals.entries())
+      .sort((a,b)=>b[1]-a[1])
+      .slice(0, limit)
+      .map(([c])=>c);
+    const topSet = new Set(top);
+
+    const out = [];
+    for (const [k, v] of counts.entries()) {
+      const [bucket, country] = k.split("|");
+      if (!topSet.has(country)) continue;
+      out.push({ bucket, country, count: v });
+    }
+    out.sort((a,b)=> a.bucket===b.bucket ? a.country.localeCompare(b.country) : (a.bucket < b.bucket ? -1 : 1));
+    return res.json(out);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "server_error" });
+  }
+});
+
+// Types over time (date × disasterType) for stacked area chart
+app.get('/analytics/types-over-time', async (req, res) => {
+  try {
+    const results = await Post.aggregate([
+      {
+        $addFields: {
+          _type: "$labels.disasterType",
+          _day: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }
+        }
+      },
+      { $match: { _type: { $ne: null, $ne: "" } } },
+      { $group: { _id: { day: "$_day", type: "$_type" }, count: { $sum: 1 } } },
+      { $project: { _id: 0, bucket: "$_id.day", type: "$_id.type", count: 1 } },
+      { $sort: { bucket: 1, type: 1 } }
+    ]);
+    res.json(results);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "server_error" });
+  }
+});
 
 // serve react index file for all other requests not handled
 app.get(/.*/, (req, res) => {
