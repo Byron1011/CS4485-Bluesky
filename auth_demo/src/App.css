@@ -1,0 +1,172 @@
+/* CSS RESET */
+
+/* 1. Use a more-intuitive box-sizing model */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* 2. Remove default margin */
+* {
+  margin: 0;
+}
+
+body * {
+  display: inline-block;
+}
+/* 3. Enable keyword animations */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    interpolate-size: allow-keywords;
+  }
+}
+
+body {
+  /* 4. Add accessible line-height */
+  line-height: 1.5;
+  /* 5. Improve text rendering */
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 6. Improve media defaults */
+img, picture, video, canvas, svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* 7. Inherit fonts for form controls */
+input, button, textarea, select {
+  font: inherit;
+}
+
+/* 8. Avoid text overflows */
+p, h1, h2, h3, h4, h5, h6 {
+  overflow-wrap: break-word;
+}
+
+/* 9. Improve line wrapping */
+p {
+  text-wrap: pretty;
+}
+h1, h2, h3, h4, h5, h6 {
+  text-wrap: balance;
+}
+
+/*
+  10. Create a root stacking context
+*/
+#root, #__next {
+  isolation: isolate;
+}
+
+/* END OF RESET */
+:root {
+  --pastel-red: #e63946;
+  --cream-white: #f8f9fa;
+  --dark-blue: #1d3557;
+  --light-blue: #457b9d;
+
+  --light-grey: #ced4da;
+  --dark-black: #212529;
+
+  --bright-blue: #00b4d8;
+  --bright-red: #d00000;
+
+
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+
+ }
+
+
+#register-img {
+  background-image: url("../public/register.png");
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  background-position: center;
+}
+
+#login-img {
+  background-image: url("../public/login.png");
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  background-position: center;
+}
+
+
+.image-card-container {
+  display: flex;
+  flex-direction: row;
+  height: 100vh;
+  width: 100vw;
+}
+
+.card-img {
+  height: inherit;
+  width: 50%;
+}
+
+.form-card-container {
+  height: inherit;
+  width: 50%;
+  background-color: var(--light-grey);
+  
+  display: flex;
+
+  justify-content: center;
+  align-items: center;
+
+}
+
+.form-card {
+  color:var(--dark-black);
+  background-color: var(--cream-white);
+  width: 65%;
+  padding: 14px;
+  border-radius: 4px;
+
+  display: flex;
+  flex-direction: column;
+
+  box-shadow: 2px 27px 84px 2px rgba(0,0,0,0.75);
+  -webkit-box-shadow: 2px 27px 84px 2px rgba(0,0,0,0.75);
+  -moz-box-shadow: 2px 27px 84px 2px rgba(0,0,0,0.75);
+  
+}
+
+.form-card input {
+  padding: 0.5em 1.0em;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+}
+
+.form-card input:focus {
+  border-color: var(--bright-blue);
+  border-width: 4px;
+
+  outline: none;
+}
+.input-group {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.error-text {
+  color: var(--bright-red);
+  font-size: 0.9em;
+  margin: 0 0 0.25em 0;
+  line-height: 1.2em;
+}
+
+.hidden-text {
+  visibility: hidden;
+}
+
+.invalid {
+  border: 2px solid var(--bright-red);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
