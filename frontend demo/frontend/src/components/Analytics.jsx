@@ -1,10 +1,13 @@
-import logoUrl from "../assets/logo.png"
-
 import React, { useEffect, useMemo, useState } from "react";
+import { getTypeColor } from "../theme/typeColors";
 import {
     BarChart, Bar, LineChart, Line, AreaChart, Area,
     XAxis, YAxis, Tooltip, CartesianGrid, Legend, ResponsiveContainer, Cell
 } from "recharts";
+import "../App.css";
+import logoUrl from "../assets/logo.png"
+import zoomInPng from "../assets/zoom-in.png";
+import zoomOutPng from "../assets/zoom-out.png";
 
 /*keep dark mode*/
 function useEnsureTheme() {
@@ -18,31 +21,38 @@ function useEnsureTheme() {
 }
 
 /*small UI wrapper*/
-function Card({ title, children, subtitle }) {  
+function Card({ title, children, subtitle, onZoom, isFocused }) {  
     return (
-        <section className="list-box chart-card">
-            {title ? <h2 className="col-title" style={{ marginBottom: 4 }}>{title}</h2> : null}
-            {subtitle ? (
-                <p className="meta" style={{ margin: "4px 0 12px", lineHeight: 1.35 }}>{subtitle}</p>
-            ) : null}
-            {children}
-        </section>
+        <section className="list-box chart-card" style={{ position: "relative" }}>
+      {/* zoom toggle (top-right) */}
+      {onZoom ? (
+        <button
+          type="button"
+          aria-label={isFocused ? "Zoom out" : "Zoom in"}
+          title={isFocused ? "Zoom out" : "Zoom in"}
+          onClick={onZoom}
+          className="zoom-btn zoom-btn--topright"
+        >
+          <img
+            src={isFocused ? zoomOutPng : zoomInPng}
+            alt=""
+            className="zoom-btn__icon"
+          />
+        </button>
+      ) : null}
+
+      {title ? <h2 className="col-title" style={{ marginBottom: 4 }}>{title}</h2> : null}
+      {subtitle ? (
+        <p className="meta" style={{ margin: "4px 0 12px", lineHeight: 1.35 }}>{subtitle}</p>
+      ) : null}
+      {children}
+    </section>
   );
 }
 
 /* grid 2x2 */
 function ChartGrid({ children }) {
-    return (
-        <div
-            style={{
-            display: "grid",
-            gap: 16,
-            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-        }}
-        >
-        {children}
-        </div>
-    );
+    return <div className="cards-grid">{children}</div>;
 }
 
 /* tooltip- changed for darkmode*/
@@ -52,12 +62,14 @@ const DarkTooltip = ({ active, payload, label }) => {
     if (!rows.length) return null;
     return (
         <div style={{
-            background: "var(--panel)",
+            background: "var(--card)",
             border: "1px solid var(--line)",
             color: "var(--text)",
             borderRadius: 8,
             padding: 10,
             boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
+            WebkitFontSmoothing: "antialiased",
+            MozOsxFontSmoothing: "grayscale"
         }}>
         <div style={{ fontWeight: 600, marginBottom: 6 }}>{label}</div>
             {rows.map((p, idx) => (
@@ -73,36 +85,6 @@ const DarkTooltip = ({ active, payload, label }) => {
         </div>
     );
 };
-
-/*palettes NEED TO FIX/CHANGE */
-const PASTEL = [
-    "#a0c4ff", "#bdb2ff", "#ffc6ff", "#ffd6a5", "#caffbf",
-    "#9bf6ff", "#fdffb6", "#ffadad", "#bde0fe", "#cdeac0",
-];
-
-const TYPE_COLORS = new Map([
-  ["earthquake", "#f94144"],
-  ["flood",      "#577590"],
-  ["wildfire",   "#f3722c"],
-  ["hurricane",  "#277da1"],
-  ["tornado",    "#90be6d"],
-  ["tsunami",    "#4d908e"],
-  ["landslide",  "#f8961e"],
-  ["blizzard",   "#577590"],
-  ["drought",    "#f9844a"],
-  ["volcano",    "#e85d04"],
-  ["storm",      "#43aa8b"],
-  ["hail",       "#577590"],
-  ["heatwave",   "#f94144"],
-  ["ice storm",  "#577590"],
-  ["snowstorm",  "#577590"],
-  ["wind",       "#577590"],
-  ["fire",       "#f3722c"],
-  ["other",      "#8d99ae"],
-]);
-
-/* helpers*/
-const getTypeColor = (t) => TYPE_COLORS.get(canon(t));
 
 const canon = s => String(s ?? "").trim().toLowerCase();
 
@@ -145,7 +127,7 @@ function pivotTallToWide(rows, bucketKey, categoryKey, valueKey, orderedBuckets,
 }
 
 /*Chart 1: Top Types (bar) */
-function TopTypesBar() {
+function TopTypesBar({ onZoom, isFocused }) {
     const [rows, setRows] = useState([]);
     useEffect(() => {
         fetch("/analytics/top-types")
@@ -162,18 +144,20 @@ function TopTypesBar() {
     return (
         <Card
             title="Top Disaster Types — Total Posts"                             
-            subtitle="Which hazard categories have the most posts overall."     
+            subtitle="Which hazard categories have the most posts overall."
+            onZoom={onZoom}
+            isFocused = {isFocused} 
         >
-            <div style={{ width: "100%", height: 320 }}>
+            <div style={{ width: "100%", height: isFocused ? 600 : 320 }}>
                 <ResponsiveContainer>
                     <BarChart data={data}>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
                         <XAxis dataKey="type" stroke="var(--text)" />
                         <YAxis stroke="var(--text)" />
-                        <Tooltip content={<DarkTooltip />} />
+                        <Tooltip content={<DarkTooltip />} cursor={{ fill: 'var(--chart-cursor)' }}/>
                         <Bar dataKey="count">
                             {data.map((row, i) => {
-                                const fill = getTypeColor(row.type) || PASTEL[i % PASTEL.length];
+                                const fill = getTypeColor(row.type);
                                 return <Cell key={i} fill={fill} />;
                             })}
                         </Bar>
@@ -185,7 +169,7 @@ function TopTypesBar() {
 }
 
 /* Chart 2: Posts Over Time (line)*/
-function PostsOverTime() {
+function PostsOverTime({ onZoom, isFocused }) {
     const [rows, setRows] = useState([]);
     useEffect(() => {
         fetch("/analytics/posts-over-time")
@@ -204,18 +188,27 @@ function PostsOverTime() {
 
     return (
         <Card
-            title="Daily Post Volume — All Sources"                              
-            subtitle="Total posts per day across your stream."               
+            title="Daily Post Volume"                              
+            subtitle="Total posts per day across BlueSky stream."
+            onZoom={onZoom}
+            isFocused = {isFocused}          
         >
-        <div style={{ width: "100%", height: 320 }}>
+        <div style={{ width: "100%", height: isFocused ? 600 : 320 }}>
         <ResponsiveContainer>
             <LineChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
                 <XAxis dataKey="date" stroke="var(--text)" />
                 <YAxis stroke="var(--text)" />
-                <Tooltip content={<DarkTooltip />} />
+                <Tooltip content={<DarkTooltip />} cursor={{ stroke: 'transparent', fill: 'var(--chart-cursor)' }} />
                 <Legend />
-                <Line type="monotone" dataKey="count" stroke="#8ecae6" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                <Line 
+                    type="monotone" 
+                    dataKey="count" 
+                    stroke="#6cb7daff" 
+                    strokeWidth={2} 
+                    dot={false} 
+                    activeDot={{ r: 4 }} 
+                />
             </LineChart>
         </ResponsiveContainer>
         </div>
@@ -224,7 +217,7 @@ function PostsOverTime() {
 }
 
 /* Chart 3: Top Countries Over Time (line) NOT WORKING*/
-function TopCountriesOverTimeLine({ limit = 5, days = 30 }) {
+function TopCountriesOverTimeLine({ limit = 5, days = 30, onZoom, isFocused }) {
     const [rows, setRows] = useState([]);
     
     useEffect(() => {
@@ -254,35 +247,27 @@ function TopCountriesOverTimeLine({ limit = 5, days = 30 }) {
         return pivotTallToWide(rows, "bucket", "country", "count", buckets, countries);
     }, [rows, countries]);
 
-    const colorMap = useMemo(() => {
-        const m = new Map();
-        countries.forEach((c, i) => m.set(c, PASTEL[i % PASTEL.length]));
-        return m;
-    }, [countries]);
-
-    const isZeroSeries = Array.isArray(data)
-        ? (key) => data.every(row => (row?.[key] ?? 0) === 0)
-        : () => true;
-
     return (
         <Card
-            title={`Top ${countries.length} Countries — Daily Posts`}  
-            subtitle="Daily Post counts for the Top Posting."  
+            title={`Top 5 Countries — Daily Posts`}  
+            subtitle="Daily Post counts for the Top Posting."
+            onZoom={onZoom}
+            isFocused={isFocused}
             >
-            <div style={{ width: "100%", height: 340 }}>
+            <div style={{ width: "100%", height: isFocused ? 600 : 320 }}>
                 <ResponsiveContainer>
                     <LineChart data={data}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
                     <XAxis dataKey="bucket" stroke="var(--text)" />
                     <YAxis stroke="var(--text)" />
-                    <Tooltip content={<DarkTooltip />} />
+                    <Tooltip content={<DarkTooltip />} cursor={{ stroke: 'transparent', fill: 'var(--chart-cursor)' }} />
                     <Legend />
                     {countries.map((c) => (
                     <Line
                         key={c}
                         type="monotone"
                         dataKey={c}
-                        stroke={colorMap.get(c)}
+                        stroke={getTypeColor(c)}
                         strokeWidth={2}
                         dot={false}
                         activeDot={{ r: 4 }}
@@ -297,7 +282,7 @@ function TopCountriesOverTimeLine({ limit = 5, days = 30 }) {
 }
 
 /* Chart 4: Types Over Time (stacked area) */
-function TypesOverTimeStacked({ topK = 5 }) {
+function TypesOverTimeStacked({ topK = 5, onZoom, isFocused }) {
     const [rows, setRows] = useState([]);
 
     useEffect(() => {
@@ -349,42 +334,42 @@ function TypesOverTimeStacked({ topK = 5 }) {
     return { data: wide, keys: allKeys };
     }, [rows, topK]);
 
-    const colorMap = useMemo(() => {
-        const m = new Map();
-        keys.forEach(k => {
-            const key = canon(k);
-            const color = TYPE_COLORS.get(key) || (key === "other" ? "#8d99ae" : PASTEL[(keys.indexOf(k)) % PASTEL.length]);
-        m.set(k, color);
-        });
-        return m;
-    }, [keys]);
+    const colorForKey = (k) => {
+        if (k === "other") return "var(--muted-2)";
+        return getTypeColor(k);
+    };
 
     return (
         <Card
             title="Daily Posts by Disaster Type — Stacked"
             subtitle="Daily totals split by hazard type; minor types are grouped into “Other”."
+            onZoom={onZoom}
+            isFocused ={isFocused}
         >
-            <div style={{ width: "100%", height: 360 }}>
+            <div style={{ width: "100%", height: isFocused ? 600 : 320 }}>
                 <ResponsiveContainer>
                     <AreaChart data={data}>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
                         <XAxis dataKey="bucket" stroke="var(--text)" />
                         <YAxis stroke="var(--text)" />
-                        <Tooltip content={<DarkTooltip />} />
+                        <Tooltip content={<DarkTooltip />} cursor={{ stroke: 'transparent', fill: 'var(--chart-cursor)' }} />
                         <Legend />
-                        {keys.map((k) => (
-                        <Area
-                            key={k}
-                            type="monotone"
-                            dataKey={k}
-                            stackId="1"
-                            stroke={colorMap.get(k)}
-                            fill={colorMap.get(k)}
-                            fillOpacity={0.5}
-                            strokeWidth={2}
-                            hide={data.every(row => (row?.[k] ?? 0) === 0)}
-                        />
-                        ))}
+                        {keys.map((k) => {
+                            const c = colorForKey(k);
+                            return(
+                                <Area
+                                    key={k}
+                                    type="monotone"
+                                    dataKey={k}
+                                    stackId="1"
+                                    stroke={c}
+                                    fill={c}
+                                    fillOpacity={0.5}
+                                    strokeWidth={2}
+                                    hide={data.every(row => (row?.[k] ?? 0) === 0)}
+                                />
+                            );
+                        })}
                     </AreaChart>
                 </ResponsiveContainer>
             </div>
@@ -395,33 +380,87 @@ function TypesOverTimeStacked({ topK = 5 }) {
 /* Page*/
 export default function Analytics() {
     useEnsureTheme();
+    
+    const [focusKey, setFocusKey] = useState(null);
+    useEffect(() => {
+        const onKey = (e) => { if (e.key === 'Escape') setFocusKey(null); };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, []);
+
+    const [totalPosts, setTotalPosts] = useState(null);
+    useEffect(() => {
+        fetch('/analytics/total-posts')
+        .then(r => r.json())
+        .then(d => setTotalPosts(typeof d?.total === 'number' ? d.total : null))
+        .catch(() => setTotalPosts(null));
+    }, []);
+
     return (
         <div className="grid-3-col">
-            <section className="list-box">
-                <h2 className="col-title">Analytics</h2>
-                <p className="meta" style={{ marginTop: 4 }}>
-                These charts aggregate the same posts you see on the map/list!
-                </p>
-            </section>
+      <section className="list-box analytics-header">
+        <h2 className="col-title">Analytics</h2>
+        <p className="meta" style={{ marginTop: 4 }}>
+          These charts aggregate the same posts you see on the map/list!
+        </p>
+        <p className="total-line" style={{ marginTop: 6, fontWeight: 600 }}>
+          <span className="total-number">
+            {totalPosts == null ? '—' : totalPosts.toLocaleString()}
+          </span>{" "}
+          Total Posts
+        </p>
+      </section>
 
-            <ChartGrid>
-                <TopTypesBar />
-                <PostsOverTime />
-                <TopCountriesOverTimeLine limit={5} />
-                <TypesOverTimeStacked topK={5} />
-            </ChartGrid>
+      {/* Either 2×2 grid or single chart */}
+      {!focusKey ? (
+        <ChartGrid>
+          <TopTypesBar
+            onZoom={() => setFocusKey('top-types')}
+            isFocused={false}
+          />
+          <PostsOverTime
+            onZoom={() => setFocusKey('posts-over-time')}
+            isFocused={false}
+          />
+          <TopCountriesOverTimeLine
+            limit={5}
+            onZoom={() => setFocusKey('top-countries')}
+            isFocused={false}
+          />
+          <TypesOverTimeStacked
+            topK={5}
+            onZoom={() => setFocusKey('types-stacked')}
+            isFocused={false}
+          />
+        </ChartGrid>
+      ) : (
+        <div>
+            {focusKey === 'top-types' && (
+              <TopTypesBar onZoom={() => setFocusKey(null)} isFocused />
+            )}
+            {focusKey === 'posts-over-time' && (
+              <PostsOverTime onZoom={() => setFocusKey(null)} isFocused />
+            )}
+            {focusKey === 'top-countries' && (
+              <TopCountriesOverTimeLine limit={5} onZoom={() => setFocusKey(null)} isFocused />
+            )}
+            {focusKey === 'types-stacked' && (
+              <TypesOverTimeStacked topK={5} onZoom={() => setFocusKey(null)} isFocused />
+            )}
+          </div>
+      )}
 
-            <section className="list-box team-card">
-                <h2 className="col-title" style={{ marginBottom: 8 }}>Blue Sky Crisis Post Team</h2>
-                <p style={{ margin: 0 }}>
-                    Designed by: Byron Rodas, Liam George, Corey Jones, Nyha Tortorello, Caden Cochran, San Yun
-                </p>
-            </section>
+      <section className="list-box team-card">
+        <h2 className="col-title" style={{ marginBottom: 8 }}>Blue Sky Crisis Post Team</h2>
+        <p style={{ margin: 0 }}>
+          Designed by: Byron Rodas, Liam George, Corey Jones, Nyha Tortorello, Caden Cochran, San Yun
+        </p>
+      </section>
 
-            <section className="site-footer">
-                <img src={logoUrl} alt="Blue Sky Crisis Intel" className="footer-logo" />
-                <div className="footer-mark">Blue Sky Crisis Intel</div>
-            </section>
-        </div>
-    );
+      <section className="site-footer">
+        <img src={logoUrl} alt="Blue Sky Crisis Intel" className="footer-logo" />
+        <div className="footer-mark">Blue Sky Crisis Intel</div>
+      </section>
+    </div>
+  );
 }
