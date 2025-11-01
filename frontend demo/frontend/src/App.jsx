@@ -10,15 +10,25 @@ import Analytics from './components/Analytics';
 import Cookies from 'js-cookie';
 import logoUrl from './assets/logo.png';
 
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from "recharts";
-
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 const KNOWN_TYPES = new Set([
-  'earthquake','tornado','flood','thunderstorm','wildfire','hurricane',
-  'tsunami','landslide','blizzard','drought','volcano','cyclone',
-  'storm','hail','heatwave','ice storm','snowstorm','wind','fire'
+  'flood',
+  'earthquake',
+  'wildfire',
+  'hurricane',
+  'tornado',
+  'storm',
+  'heatwave',
+  'landslide',
+  'volcano',
+  'avalanche',
+  'fire',
+  'explosion',
+  'accident',
+  'disease',
+  'violence'
 ]);
 const NON_TYPES = new Set(['', 'none', 'unknown', 'n/a', 'na', 'null']);
 
@@ -50,6 +60,15 @@ function normalizeApiResults(apiRows) {
     return raw;
   };
 
+  const extractUser = (r) => {
+    const s = (v) => (typeof v === 'string' && v.trim()) ? v.trim() : '';
+    return s(r?.author) ||
+         s(r?.user?.handle) ||
+         s(r?.author?.handle) ||
+         s(r?.username) ||
+         '';
+  };
+
   for (const r of rows) {
     const disasterType = extractType(r);
     const coords = Array.isArray(r?.coordinates) ? r.coordinates : [];
@@ -58,7 +77,7 @@ function normalizeApiResults(apiRows) {
       out.push({
         id: r.postId,
         postId: r.postId,
-        username: "",
+        username: extractUser(r),
         text: r.text ?? "",
         disasterType,
         createdAt: r.createdAt,
@@ -80,7 +99,7 @@ function normalizeApiResults(apiRows) {
       out.push({
         id: `${r.postId}:${i}`,
         postId: r.postId,
-        username: "",
+        username: extractUser(r),
         text: r.text ?? "",
         disasterType,
         createdAt: r.createdAt,
@@ -117,85 +136,6 @@ function dateRangeLabel(from, to) {
   return `Until ${fmtDate(to)}`;
 }
 
-function TopDisastersChart() {
-  const [data, setData] = useState([]);
-
-  useEffect(() => {
-    fetch("http://localhost:3000/analytics/top-types")
-      .then(res => res.json())
-      .then(setData)
-      .catch(console.error);
-  }, []);
-
-  const chartData = data.map(item => ({
-    type: item._id.charAt(0).toUpperCase() + item._id.slice(1),
-    count: item.count
-  }));
-
-  return (
-    <div className="p-6 bg-gray-50 rounded-2xl shadow-md">
-      <h2 className="text-xl font-semibold mb-4 text-center">
-        Disaster Types with Most Posts
-      </h2>
-      <BarChart width={700} height={350} data={chartData}>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="type" />
-        <YAxis />
-        <Tooltip />
-        <Bar dataKey="count" fill="#8884d8" />
-      </BarChart>
-    </div>
-  );
-}
-
-//old graphs
-function PostsOverTime() {
-  const [data, setData] = useState([]);
-
-  useEffect(() => {
-    fetch("http://localhost:3000/analytics/posts-over-time")
-      .then(res => res.json())
-      .then(setData)
-      .catch(console.error);
-  }, []);
-
-  const chartData = data.map(item => ({
-    date: item._id,
-    count: item.count
-  }));
-
-  return (
-    <div className="p-6 bg-gray-50 rounded-2xl shadow-md">
-      <h2 className="text-xl font-semibold mb-4 text-center">
-        Posts Over Time
-      </h2>
-      <LineChart width={700} height={350} data={chartData}>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="date" />
-        <YAxis />
-        <Tooltip />
-        <Legend />
-        <Line type="monotone" dataKey="count" stroke="#10b981" />
-      </LineChart>
-    </div>
-  );
-}
-
-function About() {
-  return (
-    <>
-      <TopDisastersChart />
-      <PostsOverTime />
-      <div className="app">
-        <div style={{ padding: 20 }}>
-          <h1>Blue Sky Crisis Post Team</h1>
-          <p>Designed by: Byron Rodas, Liam George, Corey Jones, Nyha Tortorello, Caden Cochran, San Yun</p>
-        </div>
-      </div>
-    </>
-  );
-}
-///end of old about page an graphs
 //fetch every post on page
 async function fetchAllPosts({ withCoords = false } = {}) {
   const PAGE_SIZE = 200;
@@ -534,8 +474,7 @@ function Dashboard() {
 
   return (
   <>
-      {/*dark class on the wrapper */}
-      <div className={`app ${darkTheme ? 'dark-theme' : ''}`}>
+      <div className="app">
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 8 }}>
           <label className="switch" title="Toggle dark mode">
