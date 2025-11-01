@@ -5,7 +5,7 @@ export default function FilterBar({ types = [], values = [], onToggle, onClearAl
     return Array.from(new Set(types.filter(Boolean))).sort((a,b) => a.localeCompare(b));
   }, [types]);
 
-  const isActive = (t) => values.includes(String(t || ''));
+  const isActive = (t) => values.map(v => v.toLowerCase()).includes(String(t || '').toLowerCase());
 
   const clearAll = () => {
     if (typeof onClearAll === 'function') onClearAll();
@@ -13,7 +13,7 @@ export default function FilterBar({ types = [], values = [], onToggle, onClearAl
 
   return (
     <div className="filter-types-inline">
-    <div className="filter-label">Disaster Types:</div>
+    <div className="filter-label">Hazard Types:</div>
 
     <div className="type-chip-row" role="group" aria-label="Filter by type">
       <button
