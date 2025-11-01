@@ -1,10 +1,10 @@
 import { useEffect, useRef } from 'react';
+import { getTypeColor } from '../theme/typeColors';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.heat';
 import resetIconUrl from '../assets/resetZoom.png';
 
-const MARKER_ZOOM_THRESHOLD = 0;
 const SELECTION_ZOOM = 9;
 const KM_PER_DEG = 111.32;
 
@@ -18,26 +18,6 @@ const HEAT = {
 
 const WORLD_BOUNDS = L.latLngBounds(L.latLng(-85, -180), L.latLng(85, 180));
 const INITIAL_VIEW = { center: [20, 0], zoom: 2 };
-
-// CSS var reader
-const cssVar = (name) =>
-  getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-
-// known type vars
-const cssVarForType = (t) => {
-  const key = String(t || '').toLowerCase();
-  if (key === 'tornado')      return '--marker-tornado';
-  if (key === 'earthquake')   return '--marker-earthquake';
-  if (key === 'flood')        return '--marker-flood';
-  if (key === 'thunderstorm') return '--marker-thunderstorm';
-  return null;
-};
-
-// fallback palette for unknown types
-const FALLBACK_PALETTE = [
-  '#e53935', '#8e24aa', '#3949ab', '#00897b', '#7cb342',
-  '#fb8c00', '#6d4c41', '#00838f', '#5e35b1', '#1e88e5'
-];
 
 // small helper to clamp
 const clamp01 = (x) => Math.max(0, Math.min(1, x));
@@ -57,25 +37,16 @@ export default function MapView({
   useEffect(() => { postsRef.current = posts; }, [posts]);
 
   // type -> color map
-  const typeColorMapRef = useRef(new Map());
-  const nextPaletteIdxRef = useRef(0);
+  const typeColorCacheRef = useRef(new Map());
+  
   const colorForType = (type) => {
-    const label = String(type || '').trim();
-    if (!label) return cssVar('--marker-default') || '#3895ff';
-    const hit = typeColorMapRef.current.get(label);
+    const key = String(type || '').trim();
+    if (!key) return getComputedStyle(document.documentElement).getPropertyValue('--marker-default').trim() || '#3895ff';
+    const hit = typeColorCacheRef.current.get(key);
     if (hit) return hit;
-    const varName = cssVarForType(label);
-    if (varName) {
-      const cv = cssVar(varName);
-      if (cv) {
-        typeColorMapRef.current.set(label, cv);
-        return cv;
-      }
-    }
-    const color = FALLBACK_PALETTE[nextPaletteIdxRef.current % FALLBACK_PALETTE.length];
-    nextPaletteIdxRef.current += 1;
-    typeColorMapRef.current.set(label, color);
-    return color;
+    const c = getTypeColor(key);
+    typeColorCacheRef.current.set(key, c);
+    return c;
   };
 
   // panes & layers
@@ -225,7 +196,7 @@ const getTypeLegendHTML = () => {
 
   return `
     <section class="legend-section legend-types">
-      <div class="legend-title">Disaster types</div>
+      <div class="legend-title">Hazard Types</div>
       ${rows}
     </section>
   `;
@@ -643,7 +614,7 @@ const getTypeLegendHTML = () => {
     map.on('moveend', openAfterMove);
   }
 
-  // Cleanup in case selection changes mid-animation
+  // Cleanup in case selection changes
   return () => map.off('moveend', openAfterMove);
 }, [selectedPostId]);
 
