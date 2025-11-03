@@ -9,7 +9,6 @@ import cookieParser from 'cookie-parser'
 const app = express();
 const PORT = process.env.PORT;
 const PYTHON_PORT = process.env.PYTHON_PORT;
-//const HF_API_KEY = process.env.HF_API_KEY
 
 import path from "path";
 import { fileURLToPath } from "url";
@@ -33,11 +32,8 @@ app.use((req, res, next) => {
     req.cookies.dark_theme = "false";
 
   }
-
-
   next();
 });
-
 
 app.use(cors());
 
@@ -50,21 +46,34 @@ app.use(express.static(path.join(__dirname, "/frontend/dist")));
 
 
 //****** MongoDB Atlas connection function ******
-async function start(){
-  try{
-    await mongoose.connect (process.env.MONGO_URI);
-    console.log('Connected to DB')
-    
+async function start() {
+  try {
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log("Connected to DB");
+
+    // Create TTL index: automatically delete posts 14 days after 'createdAt'
+    const ttlDays = 14;
+    const ttlSeconds = ttlDays * 24 * 60 * 60;
+
+    // Ensure index exists on the 'createdAt' field
+    await Post.collection.createIndex(
+      { createdAt: 1 },
+      { expireAfterSeconds: ttlSeconds }
+    );
+
+    console.log(`TTL index created on Post.createdAt (expires after ${ttlDays} days)`);
+
     app.listen(PORT, () => {
       console.log(`Server started at: http://localhost:${PORT}`);
     });
-  }catch(err) {
-      console.error(' DB Connection failed: ', err);
-      process.exit(1);
+  } catch (err) {
+    console.error("DB Connection failed: ", err);
+    process.exit(1);
   }
 }
 
-start();
+
+//start();
 
 
 //**********************************************
@@ -170,52 +179,7 @@ app.get("/resources", async(req, res) => {
 
 });
 
-/*
-// hugging face llm classification
-async function classifyText(text) {
-  try {
-    const response = await fetch(
-      "https://api-inference.huggingface.co/models/elam2909/bert-disaster-classifier",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${HF_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ inputs: text }),
-      }
-    );
-
-    if (!response.ok) {
-      console.error("Model API error:", response.statusText);
-      return null;
-    }
-
-    const result = await response.json();
-    if (!Array.isArray(result) || !Array.isArray(result[0])) return null;
-
-    const prediction = result[0][0];
-    return prediction.label;
-  } catch (err) {
-    console.error("Classification failed:", err);
-    return null;
-  }
-}
-
 async function filterDisasterPosts(posts) {
-  const filtered = [];
-  for (const post of posts) {
-    const label = await classifyText(post.text || "");
-    if (label === "LABEL_1" || label.toLowerCase().includes("disaster")) {
-      filtered.push(post);
-    }
-  }
-  console.log(`Filtered ${posts.length - filtered.length} non-disaster posts.`);
-  return filtered;
-}
-*/
-
-async function filterDisasterPostsUsingFlask(posts) {
   try {
     const response = await fetch(`http://localhost:${PYTHON_PORT}/predict_disaster`, {
       method: "POST",
@@ -264,7 +228,7 @@ app.get('/search-save', async (req, res) => {
     const normalized_posts = posts.map(p => normalize_DB(p, q));
 
     // filter posts before labeling
-    const relevant_posts = await filterDisasterPostsUsingFlask(normalized_posts);
+    const relevant_posts = await filterDisasterPosts(normalized_posts);
 
     // label each post
     const labeled_posts = await add_coordinates(relevant_posts);
@@ -416,4 +380,56 @@ app.get('/posts', async (req, res) => {
 
 app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, "frontend/dist", "index.html"));
+});
+
+// Auto-refresh disaster data every 5 minutes
+const DISASTER_TYPES = [
+  "flood",
+  "earthquake",
+  "hurricane",
+  "tornado",
+  "storm",
+  "heatwave",
+  "wildfire"
+];
+
+// Helper to trigger a /search-save call for each disaster type
+let isRefreshing = false; // queue-safety flag
+
+async function refreshAllDisasterData() {
+  if (isRefreshing) {
+    console.log(`[AUTO-UPDATE] Skipping — previous refresh still running`);
+    return;
+  }
+
+  isRefreshing = true;
+  console.log(`[AUTO-UPDATE] Starting data refresh at ${new Date().toISOString()}`);
+
+  for (const type of DISASTER_TYPES) {
+    try {
+      const url = `http://localhost:${PORT}/search-save?q=${encodeURIComponent(type)}&limit=25`;
+      const resp = await fetch(url);
+      const data = await resp.json();
+      console.log(`[AUTO-UPDATE] ${type}: Saved ${data.saved} posts`);
+    } catch (err) {
+      console.error(`[AUTO-UPDATE] Failed to refresh ${type}:`, err.message);
+    }
+
+    // Delay 5 seconds between each disaster type to avoid API throttling
+    await new Promise(r => setTimeout(r, 5000));
+  }
+
+  console.log(`[AUTO-UPDATE] Completed refresh at ${new Date().toISOString()}`);
+  isRefreshing = false;
+}
+
+// Start the app and schedule the updater
+start().then(() => {
+  console.log(`\nApp and DB initialized successfully`);
+
+  // Run immediately on startup
+  refreshAllDisasterData();
+
+  // Then repeat every 15 minutes
+  setInterval(refreshAllDisasterData, 15 * 60 * 1000);
 });

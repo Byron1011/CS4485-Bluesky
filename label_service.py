@@ -60,6 +60,7 @@ def predict_disaster():
     """
     Expects JSON: {"texts": ["text1", "text2", ...]}
     Returns: {"labels": [...], "scores": [...]}
+    Deduplicates identical texts so they are not reclassified.
     """
     data = request.get_json(force=True)
     texts = data.get("texts", [])
@@ -67,25 +68,48 @@ def predict_disaster():
         return jsonify({"error": "texts must be a list"}), 400
 
     try:
-        # Get predictions for all texts
-        results = classifier(texts, truncation=True)
-        labels, scores = [], []
+        # Deduplicate texts (preserving order)
+        seen = {}
+        unique_texts = []
+        for t in texts:
+            key = (t or "").strip()
+            if key not in seen:
+                seen[key] = None
+                unique_texts.append(key)
 
+        # Run model only on unique texts
+        results = classifier(unique_texts, truncation=True)
+
+        # Normalize results into label/score pairs
+        normalized = []
         for r in results:
-            # Handle both [{label,score},...] and [[{label,score}]] shapes
             if isinstance(r, list) and r:
                 lab = r[0].get("label")
                 sc = r[0].get("score")
             else:
                 lab = r.get("label")
                 sc = r.get("score")
+            normalized.append((lab, sc))
+
+        # Assign results back to each unique text
+        for i, t in enumerate(unique_texts):
+            seen[t] = normalized[i]
+
+        # Build aligned output (reusing cached predictions for duplicates)
+        labels, scores = [], []
+        for t in texts:
+            key = (t or "").strip()
+            lab, sc = seen.get(key, ("LABEL_0", 0.0))
             labels.append(lab)
             scores.append(sc)
 
+        print(f"Classified {len(unique_texts)} unique texts out of {len(texts)} total.")
         return jsonify({"labels": labels, "scores": scores})
+
     except Exception as e:
         print("Error during disaster classification:", e)
         return jsonify({"error": str(e)}), 500
+
 
 if __name__ == "__main__":
     app.run(port=5001, debug=False)  # debug allows server to reload on file edits

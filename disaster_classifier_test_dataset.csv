@@ -1,0 +1,51 @@
+post_text,relevant,severity,disaster_type,rationale
+"My exam was a total disaster, can’t believe I failed again.",0,0,other,Metaphor only.
+"Server crashed at work, what a catastrophe 😂",0,0,other,"Tech issue, not hazard."
+Movie night ruined because Netflix won’t load.,0,0,other,"Inconvenience, not disaster."
+That fashion show was fire 🔥 literally amazing.,0,0,other,Figurative use.
+Traffic jam downtown feels like an apocalypse.,0,0,other,Exaggeration.
+This coffee spill is my personal tragedy.,0,0,other,Joke.
+The Wi-Fi went out again… disaster.,0,0,other,Not hazard.
+"Our favorite restaurant closed, what a sad day.",0,0,other,"Emotional, not disaster."
+"Team lost the match, fans devastated.",0,0,other,Sports event.
+Can’t believe my code compiled first try—miracle.,0,0,other,Sarcasm.
+Crypto market crashed overnight.,0,0,other,Financial metaphor.
+Finals week is killing me.,0,0,other,Hyperbole.
+PowerPoint crashed before I saved.,0,0,other,"Software, not hazard."
+The cafeteria ran out of fries again 😭.,0,0,other,Not hazard.
+"That concert was lit, crowd went wild!",0,0,other,Slang.
+"My cat knocked over a glass of water, flooding the kitchen lol.",0,0,other,"Humor, not real flood."
+Why does it rain every time I wash my car?,0,0,other,"Complaint, no hazard."
+Today’s meeting was a train wreck.,0,0,other,Metaphor.
+Laptop exploded with pop-ups again.,0,0,other,Exaggeration.
+That exam tornadoed my brain.,0,0,other,Figurative.
+"Minor tremor felt across northern Japan, no damage reported.",1,1,earthquake,Low-severity quake.
+"6.2 magnitude earthquake hits Chilean coast, buildings collapsed.",1,3,earthquake,"Major quake, structural damage."
+Rivers overflowing near Jakarta after heavy rain.,1,2,flood,Medium flooding.
+Entire neighborhood underwater after dam burst.,1,3,flood,Severe flood.
+"Small brush fire near highway 5, firefighters on scene.",1,1,wildfire,"Minor, contained."
+Massive wildfire spreading fast through northern California.,1,3,wildfire,Large-scale event.
+Heavy snowstorm expected tonight across Minnesota.,1,1,storm,Warning stage.
+"Blizzard shuts down interstate, hundreds stranded.",1,3,storm,Major disruption.
+"Category 2 hurricane forming in the Gulf, tracking north.",1,2,hurricane,Developing storm.
+Hurricane winds destroyed several homes near Tampa.,1,3,hurricane,"Active, high severity."
+Tornado sirens going off in downtown Kansas City!,1,3,tornado,Immediate threat.
+"Local funnel cloud spotted, dissipated quickly.",1,1,tornado,Minor/short-lived.
+Extreme heat warning in Arizona this weekend.,1,1,heatwave,Expected hazard.
+Record-breaking 115°F temperatures causing power outages.,1,2,heatwave,"Ongoing, medium."
+"Severe cold snap tonight, keep pets indoors.",1,1,coldwave,Mild risk.
+Frozen pipes burst downtown after arctic blast.,1,2,coldwave,Property damage.
+"Hillside collapse blocks mountain road, no injuries.",1,2,landslide,Medium severity.
+Landslide destroys village after heavy rains.,1,3,landslide,Severe destruction.
+Tsunami advisory issued after 7.1 quake near Pacific islands.,1,2,tsunami,Medium warning.
+Massive tsunami hits coast—boats washed inland.,1,3,tsunami,Severe impact.
+Volcanic eruption in Iceland spewing ash into sky.,1,3,volcano,Active eruption.
+"Increased tremors near volcano, scientists monitoring.",1,1,volcano,Early warning stage.
+"Chemical spill on highway, hazmat team responding.",1,2,chemical_spill,Contained hazard.
+Explosion at chemical plant injures several workers.,1,3,chemical_spill,Severe industrial accident.
+Power grid failure leaves parts of city in darkness.,1,2,infrastructure_failure,Medium disruption.
+"Bridge collapse downtown, multiple vehicles trapped.",1,3,infrastructure_failure,Severe infrastructure disaster.
+COVID-19 cases rising again in local schools.,1,1,pandemic,Low severity resurgence.
+Flu outbreak causing hospital crowding this week.,1,1,pandemic,Mild epidemic.
+Community center opens shelter for flood victims.,1,0,flood,Informational/aid post.
+Evacuation drills scheduled next week for wildfire season.,1,0,wildfire,Preparedness info.
