@@ -62,6 +62,21 @@
   --chart-cursor: rgba(15, 23, 42, 0.06);
   --tooltip-shadow: 0 4px 12px rgba(0,0,0,0.18);
 
+  /* Login Colors */
+  --pastel-red: #e63946;
+  --cream-white: #f8f9fa;
+  --dark-blue: #1d3557;
+  --light-blue: #457b9d;
+
+  --light-grey: #ced4da;
+  --dark-black: #212529;
+
+  --bright-blue: #00b4d8;
+  --bright-red: #d00000;
+
+
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+
 }
 
 /* global defaults */
@@ -1515,3 +1530,96 @@ body {
   filter: invert(1) brightness(1.15) drop-shadow(0 0 1px rgba(0,0,0,.25));
 }
 
+
+#register-img {
+  background-image: url("../public/register.png");
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  background-position: center;
+}
+
+#login-img {
+  background-image: url("../public/login.png");
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  background-position: center;
+}
+
+.image-card-container {
+  display: flex;
+  flex-direction: row;
+  height: 100vh;
+  width: 100vw;
+}
+
+.card-img {
+  height: inherit;
+  width: 50%;
+}
+
+.form-card-container {
+  height: inherit;
+  width: 50%;
+  background-color: var(--light-grey);
+  
+  display: flex;
+
+  justify-content: center;
+  align-items: center;
+
+}
+
+.form-card {
+  color:var(--dark-black);
+  background-color: var(--cream-white);
+  width: 65%;
+  padding: 14px;
+  border-radius: 4px;
+
+  display: flex;
+  flex-direction: column;
+
+  box-shadow: 2px 27px 84px 2px rgba(0,0,0,0.75);
+  -webkit-box-shadow: 2px 27px 84px 2px rgba(0,0,0,0.75);
+  -moz-box-shadow: 2px 27px 84px 2px rgba(0,0,0,0.75);
+  
+}
+
+.form-card input {
+  padding: 0.5em 1.0em;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+}
+
+.form-card input:focus {
+  border-color: var(--bright-blue);
+  border-width: 4px;
+
+  outline: none;
+}
+.input-group {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.error-text {
+  color: var(--bright-red);
+  font-size: 0.9em;
+  margin: 0 0 0.25em 0;
+  line-height: 1.2em;
+}
+
+.hidden-text {
+  visibility: hidden;
+}
+
+.invalid {
+  border: 2px solid var(--bright-red);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
