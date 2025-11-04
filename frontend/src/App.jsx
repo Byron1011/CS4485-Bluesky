@@ -11,11 +11,6 @@ import Cookies from 'js-cookie';
 import logoUrl from './assets/logo.png';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-
-import Login from "./Login"
-import Register from "./Register"
-import Protected from "./Protected"
 
 const KNOWN_TYPES = new Set([
   'flood',
@@ -478,6 +473,7 @@ function Dashboard() {
 
   return (
   <>
+    <div className="page">
       <div className="app">
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 8 }}>
@@ -644,6 +640,7 @@ function Dashboard() {
 
         {toast && <div className="toast" role="status">{toast}</div>}
       </div>
+      </div>
     </>
   );
 }
@@ -651,15 +648,8 @@ function Dashboard() {
 // Router handles showing different views
 export default function App() {
   return (
-    <Router>
-      <Topbar />
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/analytics" element={<Analytics />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/protected" element={<Protected />} />
-      </Routes>
-    </Router>
+    <>
+    <Dashboard />
+    </>
   );
 }
