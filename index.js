@@ -736,6 +736,24 @@ app.get('/analytics/types-over-time', async (req, res) => {
   }
 });
 
+app.get("/me", async (req, res) => {
+  try {
+    const token = req.cookies?.token || (req.headers.authorization?.split(" ")[1]);
+    if (!token) return res.json({ user: null });
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    const { id } = decoded || {};
+    if (!id) return res.json({ user: null });
+
+    const user = await User.findById(id).select("username role").lean();
+    if (!user) return res.json({ user: null });
+
+    return res.json({ user });
+  } catch {
+    return res.json({ user: null });
+  }
+});
+
 // serve react index file for all other requests not handled
 app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, "frontend/dist", "index.html"));
