@@ -1,151 +1,91 @@
-import { useState, useEffect } from "react";
-import FlashMessage from "./FlashMessage";
-
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "./AuthContext";
+import logoUrl from "./assets/logo.png";
 
 export default function Login() {
-
-  console.log("log my log until I log");
-  
+  const { login } = useAuth();
+  const nav = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [touched, setTouched] = useState({ username: false, password: false });
-  const [errors, setErrors] = useState({ username: "", password: "" });
-  const [isValid, setIsValid] = useState(false);
-  const [flash, setFlash] = useState({ message: "", type: "" });
+  const [err, setErr] = useState("");
 
-  const showFlash = (msg, type = "info") => setFlash({ message: msg, type });
-  const clearFlash = () => setFlash({ message: "", type: "" });
-
-
-  // --- Validation logic ---
-  useEffect(() => {
-
-    const newErrors = { username: "", password: "" };
-    let valid = true;
-
-    if (touched.username) {
-      if (username.trim().length === 0) {
-        newErrors.username = "Username cannot be empty";
-        valid = false;
-      } else if (username.trim().length < 4) {
-        newErrors.username = "Username must be at least 4 characters long";
-        valid = false;
-      }
+  async function onSubmit(e) {
+    e.preventDefault();
+    setErr("");
+    try {
+      await login(username, password);
+      nav("/dashboard");
+    } catch (e) {
+      setErr(e.message || "Login failed");
     }
-
-    if (touched.password) {
-      if (password.trim().length === 0) {
-        newErrors.password = "Password cannot be empty";
-        valid = false;
-      } else if (password.trim().length < 4) {
-        newErrors.password = "Password must be at least 4 characters long";
-        valid = false;
-      }
-    }
-
-    // button enabled only when both inputs are valid and not empty
-    if (username.trim().length < 4 || password.trim().length < 4) valid = false;
-
-    setErrors(newErrors);
-    setIsValid(valid);
-  }, [username, password, touched]);
-
-const handleSubmit = async (e) => {
-  e.preventDefault();
-
-  try {
-    const response = await fetch("/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ username, password }),
-      credentials: "include",
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      showFlash("Could not log in user. Either username or password is incorrect", "error");
-      return;
-    }
-
-    showFlash("Log in successful!", "success");
-    // you can redirect here:
-    // navigate("/dashboard")  <-- if using react-router-dom
-
-  } catch (err) {
-    console.error("Network error:", err);
-    alert("Could not connect to the server");
   }
-};
-
-
-  const handleBlur = (field) => {
-    setTouched({ ...touched, [field]: true });
-  };
 
   return (
-    <>
-    <FlashMessage
-        message={flash.message}
-        type={flash.type}
-        onClose={clearFlash}
-      />
+    <div className="auth-wrap">
+      <div className="auth-split">
+        {/* LEFT: Media card (boxed) */}
+        <section className="auth-media-card">
+          <div className="auth-media-title">Welcome back</div>
+          <div
+            id="login-img"
+            className="auth-media"
+            style={{ backgroundImage: 'url("/login.png")' }}
+            aria-label="Login illustration"
+          />
+        </section>
 
-      <div className="image-card-container">
+        {/* RIGHT: Form card (boxed) */}
+        <section className="auth-form-card">
+          <h1 className="auth-title">Login</h1>
+          <p className="auth-subtitle">Sign in to access full dashboard, or continue using as Guest</p>
 
-      
+          {err ? <div className="error-card">{String(err)}</div> : null}
 
-      <div className="form-card-container">
-        <form className="form-card" onSubmit={handleSubmit}>
-          <h2>Login</h2>
+          <form className="auth-form" onSubmit={onSubmit}>
+            <div className="auth-row">
+              <label className="auth-label" htmlFor="username">Username</label>
+              <input
+                id="username"
+                type="text"
+                className="auth-input"
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                autoComplete="username"
+                required
+              />
+            </div>
 
-          {/* USERNAME FIELD */}
-          <div className="input-group">
-            {touched.username && errors.username ? (
-              <p className="error-text">{errors.username}</p>
-            ) : (
-              <p className="error-text hidden-text">placeholder</p>
-            )}
-            <input
-              type="text"
-              placeholder="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              onBlur={() => handleBlur("username")}
-              className={touched.username && errors.username ? "invalid" : ""}
-            />
+            <div className="auth-row">
+              <label className="auth-label" htmlFor="password">Password</label>
+              <input
+                id="password"
+                type="password"
+                className="auth-input"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                autoComplete="current-password"
+                required
+              />
+            </div>
+
+            <div className="btn-group" style={{ marginTop: 4 }}>
+              <button type="submit" className="btn btn--md btn--primary">Login</button>
+            </div>
+          </form>
+
+          <div className="auth-ctas">
+            <div>
+              <span className="auth-subtitle" style={{ marginRight: 6 }}>No account?</span>
+              <Link to="/register" className="link-quiet">Create one</Link>
+            </div>
           </div>
-
-          {/* PASSWORD FIELD */}
-          <div className="input-group">
-            {touched.password && errors.password ? (
-              <p className="error-text">{errors.password}</p>
-            ) : (
-              <p className="error-text hidden-text">placeholder</p>
-            )}
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onBlur={() => handleBlur("password")}
-              className={touched.password && errors.password ? "invalid" : ""}
-            />
-          </div>
-
-
-
-          <button type="submit" disabled={!isValid}>
-            Login
-          </button>
-        </form>
+        </section>
       </div>
 
-      <div className="card-img" id="login-img"></div>
+      <div className="auth-logo-wrap">
+        <img src={logoUrl} alt="BlueSky Crisis Intel logo" className="auth-logo" />
+      </div>
     </div>
-
-    </>
   );
 }
