@@ -602,60 +602,23 @@ app.get('/analytics/top-countries-over-time', async (req, res) => {
     const limit = Math.max(1, Math.min(Number(req.query.limit) || 5, 12));
     const days  = Number(req.query.days) || null;
 
-    //use existing labeled country fields
-    const monthly = await Post.aggregate([
-      {
-        $addFields: {
-          _countryKey: {
-            $ifNull: [
-              { $ifNull: ["$labels.country", { $ifNull: ["$labels.location.country", "$labels.location.countryName"] }] },
-              { $ifNull: ["$country", "$countryName"] }
-            ]
-          },
-          _day: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }
-        }
-      },
-      { $match: { _countryKey: { $ne: null, $ne: "", $ne: "unknown" } } },
-      { $group: { _id: { day: "$_day", country: "$_countryKey" }, count: { $sum: 1 } } },
-      { $project: { _id: 0, bucket: "$_id.day", country: "$_id.country", count: 1 } }
-    ]);
-
-    if (monthly.length) {
-      //filter by last N days
-      let filtered = monthly;
-      if (days) {
-        const cutoff = new Date(); cutoff.setUTCDate(cutoff.getUTCDate() - days);
-        filtered = monthly.filter(r => new Date(r.bucket) >= cutoff);
-      }
-      const totals = new Map();
-      for (const r of filtered) totals.set(r.country, (totals.get(r.country) || 0) + r.count);
-      const top = Array.from(totals.entries())
-                  .filter(([c]) => c && c !== "unknown")
-                  .sort((a,b)=>b[1]-a[1])
-                  .slice(0, limit)
-                  .map(([c])=>c);
-      const topSet = new Set(top);
-      return res.json(filtered.filter(r => topSet.has(r.country)));
-    }
-
-    //compute country from coordinates if labels are missing
     const match = {};
     if (days) {
-      const cutoff = new Date(); cutoff.setUTCDate(cutoff.getUTCDate() - days);
+      const cutoff = new Date();
+      cutoff.setUTCDate(cutoff.getUTCDate() - days);
       match.createdAt = { $gte: cutoff };
     }
 
-    // pull whats needed
+    // Get posts with coordinates
     const docs = await Post.find(match, {
       createdAt: 1,
-      labels: 1,
-      country: 1,
-      countryName: 1,
       coordinates: 1,
       _id: 0
     }).lean();
 
-    // simple bbox country guesser
+    if (!docs.length) return res.json([]);
+
+    // Bounding boxes for approximate country detection
     const BOXES = [
       ["United States",   24.5, 49.5, -125, -66],
       ["Canada",          41.7, 83.1, -141, -52],
@@ -678,47 +641,19 @@ app.get('/analytics/top-countries-over-time', async (req, res) => {
       ["Indonesia",      -11.0,  6.1,  95.0,141.0],
       ["Philippines",      4.6, 21.1, 116.9,126.6],
     ];
-    const inBox = (lat, lng, b) =>
-      lat >= b[1] && lat <= b[2] && lng >= b[3] && lng <= b[4];
 
-    const num = (v) => (v == null ? null : (typeof v === "string" ? parseFloat(v) : v));
-    const takePair = (val) => {
-      if (!val) return null;
+    const inBox = (lat, lng, box) =>
+      lat >= box[1] && lat <= box[2] && lng >= box[3] && lng <= box[4];
 
-      if (typeof val === "object" && !Array.isArray(val) && Array.isArray(val.coordinates) && val.coordinates.length >= 2) {
-        const A = num(val.coordinates[0]);
-        const B = num(val.coordinates[1]);
-      return (Number.isFinite(A) && Number.isFinite(B)) ? { a: A, b: B } : null; // a=lng, b=lat
-      }
-
-      if (Array.isArray(val) && Array.isArray(val[0])) {
-      const A = num(val[0][0]); const B = num(val[0][1]);
-      return (Number.isFinite(A) && Number.isFinite(B)) ? { a: A, b: B } : null;
-      }
-
-      if (Array.isArray(val) && val.length >= 2) {
-      const A = num(val[0]); const B = num(val[1]);
-      return (Number.isFinite(A) && Number.isFinite(B)) ? { a: A, b: B } : null;
-      }
-
-      return null;
-    };
-
-    const guessCountry = (doc) => {
-      const labeled =
-        doc?.labels?.country ??
-        doc?.labels?.location?.country ??
-        doc?.labels?.location?.countryName ??
-        doc?.country ?? doc?.countryName;
-      if (labeled && String(labeled).trim()) return String(labeled).trim();
-
-      const pair = takePair(doc.coordinates);
-      if (!pair) return null;
-      const candidates = [
-        [pair.a, pair.b],        // lat, lng
-        [pair.b, pair.a],        // lng, lat
+    const guessCountry = (coord) => {
+      if (!Array.isArray(coord) || coord.length < 2) return null;
+      const [a, b] = coord;
+      const pairs = [
+        { lat: a, lng: b },
+        { lat: b, lng: a },
       ];
-      for (const [lat, lng] of candidates) {
+      for (const { lat, lng } of pairs) {
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
         for (const box of BOXES) {
           if (inBox(lat, lng, box)) return box[0];
         }
@@ -726,41 +661,58 @@ app.get('/analytics/top-countries-over-time', async (req, res) => {
       return null;
     };
 
-    // Map-reduce: key by day+country
-    const counts = new Map(); 
-    const totals = new Map(); 
+    // Aggregate counts by day + country
+    const counts = new Map();
+    const totals = new Map();
+
     for (const d of docs) {
       const day = new Date(d.createdAt);
       if (Number.isNaN(day.getTime())) continue;
-      const dayKey = day.toISOString().slice(0,10); // YYYY-MM-DD
-      const ctry = guessCountry(d);
+      const dayKey = day.toISOString().slice(0, 10);
+
+      let ctry = null;
+      if (Array.isArray(d.coordinates) && d.coordinates.length) {
+        // Handle nested coordinate arrays
+        const coord = Array.isArray(d.coordinates[0])
+          ? d.coordinates[0]
+          : d.coordinates;
+        ctry = guessCountry(coord);
+      }
       if (!ctry) continue;
 
-      const k = `${dayKey}|${ctry}`;
-      counts.set(k, (counts.get(k) || 0) + 1);
+      const key = `${dayKey}|${ctry}`;
+      counts.set(key, (counts.get(key) || 0) + 1);
       totals.set(ctry, (totals.get(ctry) || 0) + 1);
     }
 
+    // Get top countries
     const top = Array.from(totals.entries())
-      .sort((a,b)=>b[1]-a[1])
+      .sort((a, b) => b[1] - a[1])
       .slice(0, limit)
-      .map(([c])=>c);
+      .map(([c]) => c);
     const topSet = new Set(top);
 
+    // Build final output
     const out = [];
-    for (const [k, v] of counts.entries()) {
-      const [bucket, country] = k.split("|");
+    for (const [key, count] of counts.entries()) {
+      const [bucket, country] = key.split('|');
       if (!topSet.has(country)) continue;
-      out.push({ bucket, country, count: v });
+      out.push({ bucket, country, count });
     }
-    out.sort((a,b)=> a.bucket===b.bucket ? a.country.localeCompare(b.country) : (a.bucket < b.bucket ? -1 : 1));
-    return res.json(out);
 
+    out.sort((a, b) =>
+      a.bucket === b.bucket
+        ? a.country.localeCompare(b.country)
+        : a.bucket.localeCompare(b.bucket)
+    );
+
+    return res.json(out);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "server_error" });
   }
 });
+
 
 // Types over time (date × disasterType) for stacked area chart
 app.get('/analytics/types-over-time', async (req, res) => {
