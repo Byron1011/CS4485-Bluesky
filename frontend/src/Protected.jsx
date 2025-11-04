@@ -1,37 +1,39 @@
-import { useState } from "react";
-import FlashMessage from "./FlashMessage";
+import { useAuth } from './AuthContext';
+import logoUrl from "./assets/logo.png";
 
-export default function LogoutTest() {
-  const [flash, setFlash] = useState({ message: "", type: "" });
+export default function Protected() {
+  const { user } = useAuth();
 
-  const showFlash = (msg, type = "info") => setFlash({ message: msg, type });
-  const clearFlash = () => setFlash({ message: "", type: "" });
-
-  const handleLogout = async () => {
-    try {
-      const res = await fetch("/logout", {
-        method: "POST",
-        credentials: "include",
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        showFlash(data.error || "Logout failed", "error");
-        return;
-      }
-
-      showFlash(data.message || "Logged out successfully", "success");
-    } catch (err) {
-      showFlash("Could not connect to server", "error");
-    }
-  };
+  const isAdmin = !!user && (user.role === 'admin' || user.role === 'superadmin');
 
   return (
-    <div className="logout-test">
-      <FlashMessage message={flash.message} type={flash.type} onClose={clearFlash} />
-      <h2>Logout Test</h2>
-      <button onClick={handleLogout}>Logout</button>
-    </div>
+    <section className="user-page">
+      <div className="user-card">
+        <h2 className="user-title">Protected</h2>
+        {!user && (
+          <p className="user-sub">You must be signed in to view this page.</p>
+        )}
+        {user && !isAdmin && (
+          <p className="user-sub">
+            You must be signed in as an Admin to view this page.
+          </p>
+        )}
+        {user && isAdmin && (
+          <div>
+            <p className="user-sub">
+              Admin access granted. Welcome, {user.username || 'admin'}.
+            </p>
+            <div className="list-box" style={{ marginTop: 12 }}>
+              <strong>Secret:</strong> Admin-only content appears here.
+            </div>
+          </div>
+        )}
+      </div>
+
+      <section className="site-footer">
+        <img src={logoUrl} alt="Blue Sky Crisis Intel" className="footer-logo" />
+        <div className="footer-mark">Blue Sky Crisis Intel</div>
+      </section>
+    </section>
   );
 }
