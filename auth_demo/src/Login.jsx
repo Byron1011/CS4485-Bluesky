@@ -4,7 +4,6 @@ import FlashMessage from "./FlashMessage";
 
 export default function Login() {
 
-  console.log("log my log until I log");
   
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");

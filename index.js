@@ -4,7 +4,7 @@ import cors from 'cors';
 import mongoose from 'mongoose';
 
 import User from "./user_schema.js";
-
+import Event from "./event_schema.js";
 
 // For use of cookies
 import cookieParser from 'cookie-parser';
@@ -30,7 +30,7 @@ function isLoggedIn(req, res, next) {
 
   const token = req.cookies.token || (req.headers.authorization?.split(" ")[1]);
   if (!token) {
-    res.redirect("/login");
+    res.status(401).json({ error: "Must log in to complete action."});
     return;
   }
 
@@ -38,13 +38,43 @@ function isLoggedIn(req, res, next) {
     console.log(token);
     const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
     req.user = decoded;
+
+
     next();
   } catch (err) {
-    res.redirect("/login");
+    res.status(401).json({ error: "Must log in to complete action."});
   }
 }
 
+// Middleware sets req.user if logged in, but does not stop / redirect request if they are not
 
+async function optionalAuth (req, res, next) {
+  const authHeader = req.headers.authorization || req.cookies?.token;
+
+  if (!authHeader) {
+    req.user = null;
+    return next(); // not logged in
+  }
+
+  try {
+    // support both "Bearer <token>" and direct cookie token
+    const token = authHeader.startsWith("Bearer ")
+      ? authHeader.split(" ")[1]
+      : authHeader;
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    req.user = await User.findById(decoded.id).select("_id username");
+  } catch {
+    req.user = null; // invalid token
+  }
+
+
+  if(req.user)
+    console.log(`user is logged in ${req.user}`);
+  else 
+    console.log("User not logged in");
+  next();
+};
 
 
 // Middleware to see if request comes from a logged in Admin
@@ -57,10 +87,10 @@ function isAdmin(req, res, next) {
 
     // If verifyToken succeeded:
     if (req.user?.role !== "admin") {
-      return res.send("admin access required");
+      res.status(402).json({ error: "Higher status needed to complete the request."});
     }
 
-    res.send("You have reached the highest level.");
+    next();
   });
 }
 
@@ -179,6 +209,87 @@ app.post("/login", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// CREATE NEW EVENT
+app.post("/api/event/new", isLoggedIn, async(req, res) => {
+
+  const user_info = req.user;
+
+  const user = await User.findById(user_info.id);
+
+
+  if(!user) {
+    console.log("ruh roh")
+    return
+  }
+  let {eventName, description, location, eventDate} = req.body;
+
+  
+
+  const event = new Event({
+    eventName,
+    description,
+    location,
+    eventDate,
+    host : user,
+    
+  });
+
+
+  user.eventsHosting.push(event);
+
+  console.log("==========EVENT==========");
+  console.log(event);
+  console.log();
+
+  console.log("=======================USER===============");
+  console.log(user);
+
+  await user.save();
+  await event.save()
+
+
+  res.status(200).json({message: "event created successfully", eventId: event.id});
+});
+
+
+// GET INFO FOR ONE EVENT
+app.get("/api/event/:id", optionalAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const event = await Event.findById(id)
+      .populate("host", "username _id")
+      .populate("attendees", "username _id");
+
+    if (!event) return res.status(403).json({ error: "Event not found" });
+
+    let isHost = false;
+    let isAttending = false;
+    let isLoggedIn = false;
+
+    console.log(req.user);
+
+    if (req.user) {
+      const userId = req.user._id;
+      isLoggedIn = true;
+      isHost = event.host?._id.equals(userId);
+      isAttending = event.attendees.some((a) => a._id.equals(userId));
+    }
+
+    res.json({
+      event,
+      isHost,
+      isAttending,
+      isLoggedIn,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch event" });
+  }
+});
+
+
 
 app.get("/logout", (req, res) => {
   res.clearCookie("token", {
