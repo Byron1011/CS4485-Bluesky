@@ -55,7 +55,7 @@ function ChartGrid({ children }) {
     return <div className="cards-grid">{children}</div>;
 }
 
-/* tooltip- changed for darkmode*/
+/* tooltip*/
 const DarkTooltip = ({ active, payload, label }) => {
     if (!active || !payload || !payload.length) return null;
     const rows = payload.filter(p => Number(p.value) > 0);
@@ -464,3 +464,5 @@ export default function Analytics() {
     </div>
   );
 }
+
+
