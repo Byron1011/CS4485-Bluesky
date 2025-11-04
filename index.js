@@ -41,6 +41,7 @@ function isLoggedIn(req, res, next) {
 
 
     next();
+    return;
   } catch (err) {
     res.status(401).json({ error: "Must log in to complete action."});
   }
@@ -288,6 +289,134 @@ app.get("/api/event/:id", optionalAuth, async (req, res) => {
     res.status(500).json({ error: "Failed to fetch event" });
   }
 });
+
+// JOIN EVENT
+app.post("/api/event/:id/join", isLoggedIn, async (req, res) => {
+  const user_info = req.user;
+  const userId = user_info.id;
+
+  const user = await User.findById(userId);
+
+  const eventId = req.params.id;
+  const event = await Event.findById(eventId)
+      .populate("host", "username _id")
+      .populate("attendees", "username _id");
+
+  // could not find event info 
+  if (!event) {
+    res.status(400).json({error: "could not find the event"});
+    return;
+  }
+
+  // could not get user info
+  if (!user) {
+    res.status(400).json({ error : "could not find logged in user\'s information"});
+    return;
+  }
+
+  // if user is already attending the event
+  if(event.attendees.some((a) => a._id.equals(userId))) {
+    res.status(400).json({ error : "user is already attending event, cannot join again"});
+    return;
+  }
+
+  // if user is the event's host
+  if(event.host?._id.equals(userId)){
+    res.status(400).json({ error : "cannot join your own event!"});
+    return;
+  }
+
+
+
+  user.eventsAttending.push(event);
+
+  event.attendees.push(user);
+
+  await user.save();
+  await event.save();
+
+
+  res.status(200).json({ message : "successfully joined the event" });
+});
+
+// LEAVE EVENT
+app.post("/api/event/:id/leave", isLoggedIn, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id: eventId } = req.params;
+
+    const event = await Event.findById(eventId);
+    if (!event) return res.status(404).json({ error: "Event not found" });
+
+    // Prevent host from "leaving" their own event
+    if (event.host.equals(userId)) {
+      return res.status(400).json({ error: "Host cannot leave their own event" });
+    }
+
+    // Remove user from event's attendees
+    await Event.findByIdAndUpdate(eventId, {
+      $pull: { attendees: userId },
+    });
+
+    // Optional: also remove event from user's attending list
+    await User.findByIdAndUpdate(userId, {
+      $pull: { eventsAttending: eventId },
+    });
+
+    res.status(200).json({ message: "You have left the event" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to leave event" });
+  }
+});
+
+
+// app.post("/api/event/:id/leave", isLoggedIn, async (req, res) => {
+//   res.status(200).json({ message : "got to LEAVE event route" });
+// });
+
+// CANCEL EVENT
+app.post("/api/event/:id/cancel", isLoggedIn, async (req, res) => {
+  try {
+    const { id: eventId } = req.params;
+    const userId = req.user.id; // From isLoggedIn middleware
+
+    const event = await Event.findById(eventId);
+    if (!event) return res.status(404).json({ error: "Event not found" });
+
+    // Check if the user is the host
+    if (!event.host.equals(userId)) {
+      return res.status(403).json({ error: "Only the host can cancel this event" });
+    }
+
+    // Remove event reference from all attendees
+    if (event.attendees.length > 0) {
+      await User.updateMany(
+        { _id: { $in: event.attendees } },
+        { $pull: { eventsAttending: event._id } }
+      );
+    }
+
+    // Remove event reference from host’s eventsHosting list
+    await User.findByIdAndUpdate(userId, {
+      $pull: { eventsHosting: event._id },
+    });
+
+    // Finally, delete the event itself
+    await Event.findByIdAndDelete(event._id);
+
+    res.status(200).json({ message: "Event cancelled and removed successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to cancel event" });
+  }
+});
+
+
+// app.post("/api/event/:id/cancel", isLoggedIn, async (req, res) => {
+//   console.log("sneaky");
+//   res.status(200).json({ message : "got to CANCEL event route" });
+// });
 
 
 

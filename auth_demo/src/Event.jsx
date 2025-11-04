@@ -35,7 +35,7 @@ export default function Event({ event, showFull = false, roleInfo = {} }) {
       let endpoint = "";
       if (action === "join") endpoint = `/api/event/${localEvent._id}/join`;
       if (action === "leave") endpoint = `/api/event/${localEvent._id}/leave`;
-      if (action === "delete") endpoint = `/api/event/${localEvent._id}/delete`;
+      if (action === "cancel") endpoint = `/api/event/${localEvent._id}/cancel`;
 
       const res = await fetch(endpoint, {
         method: "POST",
@@ -59,7 +59,7 @@ export default function Event({ event, showFull = false, roleInfo = {} }) {
           ...localEvent,
           attendees: localEvent.attendees.filter((a) => a.username !== "You"),
         });
-      } else if (action === "delete") {
+      } else if (action === "cancel") {
         setTimeout(() => {
           window.location.href = "/events";
         }, 1000);
@@ -81,7 +81,7 @@ export default function Event({ event, showFull = false, roleInfo = {} }) {
     buttonAction = "login";
   } else if (isHost) {
     buttonText = "Cancel Event";
-    buttonAction = "delete";
+    buttonAction = "cancel";
   } else if (isAttending) {
     buttonText = "Leave Event";
     buttonAction = "leave";
