@@ -117,6 +117,18 @@ async function start(){
     
     await mongoose.connect (process.env.MONGO_URI);
     console.log('Connected to DB')
+
+    // Create TTL index: automatically delete posts 14 days after 'createdAt'
+    const ttlDays = 14;
+    const ttlSeconds = ttlDays * 24 * 60 * 60;
+
+    // Ensure index exists on the 'createdAt' field
+    await Post.collection.createIndex(
+      { createdAt: 1 },
+      { expireAfterSeconds: ttlSeconds }
+    );
+
+    console.log(`TTL index created on Post.createdAt (expires after ${ttlDays} days)`);
     
     app.listen(PORT, () => {
     console.log(`Server started at: http://localhost:${PORT}`);
@@ -131,7 +143,7 @@ async function start(){
   }
 }
 
-start();
+//start();
 
 //**********************************************
 // Normalize disaster type
@@ -277,6 +289,40 @@ app.get("/resources", async(req, res) => {
 
 });
 
+async function filterDisasterPosts(posts) {
+  try {
+    const response = await fetch(`http://localhost:${PYTHON_PORT}/predict_disaster`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ texts: posts.map(p => p.text) }),
+    });
+
+    if (!response.ok) {
+      console.error(`Flask disaster API returned ${response.status}`);
+      return posts; // fallback: keep all
+    }
+
+    const data = await response.json();
+    const labels = data.labels || [];
+    const scores = data.scores || [];
+
+    // Define criterion: LABEL_1 considered disaster (adjust if model uses different label)
+    const filtered = posts.filter((p, i) => {
+      const label = (labels[i] || '').toString().toLowerCase();
+      const score = Number(scores[i] ?? 0);
+      // Adjust threshold as needed. Keep if label suggests disaster and score >= 0.8
+      return (label === 'label_1' || label.includes('disaster')) && score >= 0.8;
+    });
+
+    console.log(`Filtered ${posts.length - filtered.length} non-disaster posts.`);
+    return filtered;
+
+  } catch (err) {
+    console.error("Error calling Flask disaster classifier:", err);
+    return posts; // fallback
+  }
+}
+
 //**********************************************
 //Search and Save to db
 app.get('/search-save', async (req, res) => {
@@ -291,15 +337,13 @@ app.get('/search-save', async (req, res) => {
     if (!posts.length) return res.json({ saved: 0, cursor: data.cursor ?? null });
 
     // BlueSky gives weird objects, normalize so they only contain what we want
-    const normalized_posts = posts.map( p => {
-      const post = normalize_DB(p, q);
+    const normalized_posts = posts.map( p => normalize_DB(p, q));
 
-      return post;
-    });
-
+    // filter posts before labeling
+    const relevant_posts = await filterDisasterPosts(normalized_posts);
 
     // label each post
-    const labeled_posts = await add_coordinates(normalized_posts);
+    const labeled_posts = await add_coordinates(relevant_posts);
     console.log(labeled_posts);
 
     // change post to JSON, see what it looks like
@@ -331,9 +375,6 @@ app.get('/search-save', async (req, res) => {
       };
     });
 
-    
-
-    
 
     const r = await Post.bulkWrite(ops, { ordered: false });
     // respond with json of posts, TODO change to some other response
@@ -757,4 +798,57 @@ app.get("/me", async (req, res) => {
 // serve react index file for all other requests not handled
 app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, "frontend/dist", "index.html"));
+});
+
+// This part may not work with all the login/logout stuff, we'll see.
+// Auto-refresh disaster data every 5 minutes
+const DISASTER_TYPES = [
+  "flood",
+  "earthquake",
+  "hurricane",
+  "tornado",
+  "storm",
+  "heatwave",
+  "wildfire"
+];
+
+// Helper to trigger a /search-save call for each disaster type
+let isRefreshing = false; // queue-safety flag
+
+async function refreshAllDisasterData() {
+  if (isRefreshing) {
+    console.log(`[AUTO-UPDATE] Skipping — previous refresh still running`);
+    return;
+  }
+
+  isRefreshing = true;
+  console.log(`[AUTO-UPDATE] Starting data refresh at ${new Date().toISOString()}`);
+
+  for (const type of DISASTER_TYPES) {
+    try {
+      const url = `http://localhost:${PORT}/search-save?q=${encodeURIComponent(type)}&limit=25`;
+      const resp = await fetch(url);
+      const data = await resp.json();
+      console.log(`[AUTO-UPDATE] ${type}: Saved ${data.saved} posts`);
+    } catch (err) {
+      console.error(`[AUTO-UPDATE] Failed to refresh ${type}:`, err.message);
+    }
+
+    // Delay 5 seconds between each disaster type to avoid API throttling
+    await new Promise(r => setTimeout(r, 5000));
+  }
+
+  console.log(`[AUTO-UPDATE] Completed refresh at ${new Date().toISOString()}`);
+  isRefreshing = false;
+}
+
+// Start the app and schedule the updater
+start().then(() => {
+  console.log(`\nApp and DB initialized successfully`);
+
+  // Run immediately on startup
+  refreshAllDisasterData();
+
+  // Then repeat every 15 minutes
+  setInterval(refreshAllDisasterData, 15 * 60 * 1000);
 });

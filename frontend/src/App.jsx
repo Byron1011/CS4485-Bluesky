@@ -70,46 +70,46 @@ function normalizeApiResults(apiRows) {
 
   for (const r of rows) {
     const disasterType = extractType(r);
-    const coords = Array.isArray(r?.coordinates) ? r.coordinates : [];
+    const coordsRaw = Array.isArray(r?.coordinates) ? r.coordinates : [];
 
-    if (!coords.length) {
-      out.push({
-        id: r.postId,
-        postId: r.postId,
-        username: extractUser(r),
-        text: r.text ?? "",
-        disasterType,
-        createdAt: r.createdAt,
-        lat: undefined,
-        lng: undefined,
-        url: ""
-      });
-      continue;
-    }
-
-    //coordinates are [lat, lon]
-    coords.forEach((pair, i) => {
-      if (!Array.isArray(pair) || pair.length < 2) return;
+    // filter only valid coordinate pairs
+    const coords = coordsRaw.filter(pair => {
+      if (!Array.isArray(pair) || pair.length < 2) return false;
       const lat = Number(pair[0]);
       const lon = Number(pair[1]);
-      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
-      if (Math.abs(lat) > 90 || Math.abs(lon) > 180) return;
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return false;
+      if (Math.abs(lat) > 90 || Math.abs(lon) > 180) return false;
+      return true;
+    });
 
-      out.push({
-        id: `${r.postId}:${i}`,
-        postId: r.postId,
-        username: extractUser(r),
-        text: r.text ?? "",
-        disasterType,
-        createdAt: r.createdAt,
-        lat,
-        lng: lon,
-        url: ""
-      });
+    // skip this post entirely if no valid coordinates
+    if (!coords.length) continue;
+
+    // use only the first valid coordinate
+    const [lat, lon] = coords[0].map(Number);
+
+    out.push({
+      id: r.postId,
+      postId: r.postId,
+      username: extractUser(r),
+      text: r.text ?? "",
+      disasterType,
+      createdAt: r.createdAt,
+      lat,
+      lng: lon,
+      url: ""
     });
   }
 
-  return out;
+  // deduplicate by postId if needed
+  const uniqueOut = Object.values(
+    out.reduce((acc, item) => {
+      acc[item.postId] = item;
+      return acc;
+    }, {})
+  );
+
+  return uniqueOut;
 }
 
 function timeWindowLabel(h) {

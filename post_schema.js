@@ -8,7 +8,7 @@ const postSchema = new mongoose.Schema ({
     text: {type: String},
 
     //posted time
-    createdAt : {type: Date, index: true, required: true},
+    createdAt : {type: Date, required: true},
     
     //author of post
     author: { type: String, index: true, required: true },
