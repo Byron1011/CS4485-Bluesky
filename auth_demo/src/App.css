@@ -71,6 +71,7 @@ h1, h2, h3, h4, h5, h6 {
   --bright-blue: #00b4d8;
   --bright-red: #d00000;
 
+  --positive-green : #06d6a0;
 
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 
@@ -107,7 +108,7 @@ h1, h2, h3, h4, h5, h6 {
 .form-card-container {
   height: inherit;
   width: 50%;
-  background-color: var(--light-grey);
+  background-color: var(--cream-white);
   
   display: flex;
 
@@ -165,8 +166,31 @@ h1, h2, h3, h4, h5, h6 {
 .invalid {
   border: 2px solid var(--bright-red);
 }
-
-button:disabled {
+.form-button {
+  background-color: var(--positive-green);
+  color: white;
+  border: solid 1px var(--positive-green);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.form-button:disabled {
+  background-color: grey;
   opacity: 0.6;
   cursor: not-allowed;
+  border: none;
+}
+
+.form-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+.form-title {
+  display: inline-block;
+}
+
+.small-logo {
+  width: 60px;
+  height: 40px;
 }

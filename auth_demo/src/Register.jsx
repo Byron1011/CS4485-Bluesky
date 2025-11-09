@@ -8,7 +8,7 @@ export default function Register() {
   const [errors, setErrors] = useState({ username: "", password: "" });
   const [isValid, setIsValid] = useState(false);
   const [flash, setFlash] = useState({ message: "", type: "" });
-  
+
   const showFlash = (msg, type = "info") => setFlash({ message: msg, type });
   const clearFlash = () => setFlash({ message: "", type: "" });
 
@@ -80,59 +80,59 @@ export default function Register() {
 
     <>
       <FlashMessage
-              message={flash.message}
-              type={flash.type}
-              onClose={clearFlash}
-            />
+        message={flash.message}
+        type={flash.type}
+        onClose={clearFlash}
+      />
 
-        <div className="image-card-container">
-      <div className="card-img" id="register-img"></div>
+      <div className="image-card-container">
+        <div className="card-img" id="register-img"></div>
 
-      <div className="form-card-container">
-        <form className="form-card" onSubmit={handleSubmit}>
-          <h2>Register</h2>
+        <div className="form-card-container">
+          <form className="form-card" onSubmit={handleSubmit}>
+            <div className="form-header"><h2 className="form-title">Register</h2> <img src="/logo.png" alt="" className="small-logo" /></div>
 
-          {/* USERNAME FIELD */}
-          <div className="input-group">
-            {touched.username && errors.username ? (
-              <p className="error-text">{errors.username}</p>
-            ) : (
-              <p className="error-text hidden-text">placeholder</p>
-            )}
-            <input
-              type="text"
-              placeholder="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              onBlur={() => handleBlur("username")}
-              className={touched.username && errors.username ? "invalid" : ""}
-            />
-          </div>
+            {/* USERNAME FIELD */}
+            <div className="input-group">
+              {touched.username && errors.username ? (
+                <p className="error-text">{errors.username}</p>
+              ) : (
+                <p className="error-text hidden-text">placeholder</p>
+              )}
+              <input
+                type="text"
+                placeholder="Username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                onBlur={() => handleBlur("username")}
+                className={touched.username && errors.username ? "invalid" : ""}
+              />
+            </div>
 
-          {/* PASSWORD FIELD */}
-          <div className="input-group">
-            {touched.password && errors.password ? (
-              <p className="error-text">{errors.password}</p>
-            ) : (
-              <p className="error-text hidden-text">placeholder</p>
-            )}
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onBlur={() => handleBlur("password")}
-              className={touched.password && errors.password ? "invalid" : ""}
-            />
-          </div>
+            {/* PASSWORD FIELD */}
+            <div className="input-group">
+              {touched.password && errors.password ? (
+                <p className="error-text">{errors.password}</p>
+              ) : (
+                <p className="error-text hidden-text">placeholder</p>
+              )}
+              <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onBlur={() => handleBlur("password")}
+                className={touched.password && errors.password ? "invalid" : ""}
+              />
+            </div>
 
-          <button type="submit" disabled={!isValid}>
-            Register
-          </button>
-        </form>
+            <button className="form-button" type="submit" disabled={!isValid}>
+              Register
+            </button>
+          </form>
+        </div>
       </div>
-    </div>
     </>
-    
+
   );
 }

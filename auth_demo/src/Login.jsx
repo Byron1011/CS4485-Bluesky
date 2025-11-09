@@ -4,7 +4,7 @@ import FlashMessage from "./FlashMessage";
 
 export default function Login() {
 
-  
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [touched, setTouched] = useState({ username: false, password: false });
@@ -49,35 +49,35 @@ export default function Login() {
     setIsValid(valid);
   }, [username, password, touched]);
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  try {
-    const response = await fetch("/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ username, password }),
-      credentials: "include",
-    });
+    try {
+      const response = await fetch("/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, password }),
+        credentials: "include",
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (!response.ok) {
-      showFlash("Could not log in user. Either username or password is incorrect", "error");
-      return;
+      if (!response.ok) {
+        showFlash("Could not log in user. Either username or password is incorrect", "error");
+        return;
+      }
+
+      showFlash("Log in successful!", "success");
+      // you can redirect here:
+      // navigate("/dashboard")  <-- if using react-router-dom
+
+    } catch (err) {
+      console.error("Network error:", err);
+      alert("Could not connect to the server");
     }
-
-    showFlash("Log in successful!", "success");
-    // you can redirect here:
-    // navigate("/dashboard")  <-- if using react-router-dom
-
-  } catch (err) {
-    console.error("Network error:", err);
-    alert("Could not connect to the server");
-  }
-};
+  };
 
 
   const handleBlur = (field) => {
@@ -86,7 +86,7 @@ const handleSubmit = async (e) => {
 
   return (
     <>
-    <FlashMessage
+      <FlashMessage
         message={flash.message}
         type={flash.type}
         onClose={clearFlash}
@@ -94,56 +94,56 @@ const handleSubmit = async (e) => {
 
       <div className="image-card-container">
 
-      
-
-      <div className="form-card-container">
-        <form className="form-card" onSubmit={handleSubmit}>
-          <h2>Login</h2>
-
-          {/* USERNAME FIELD */}
-          <div className="input-group">
-            {touched.username && errors.username ? (
-              <p className="error-text">{errors.username}</p>
-            ) : (
-              <p className="error-text hidden-text">placeholder</p>
-            )}
-            <input
-              type="text"
-              placeholder="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              onBlur={() => handleBlur("username")}
-              className={touched.username && errors.username ? "invalid" : ""}
-            />
-          </div>
-
-          {/* PASSWORD FIELD */}
-          <div className="input-group">
-            {touched.password && errors.password ? (
-              <p className="error-text">{errors.password}</p>
-            ) : (
-              <p className="error-text hidden-text">placeholder</p>
-            )}
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onBlur={() => handleBlur("password")}
-              className={touched.password && errors.password ? "invalid" : ""}
-            />
-          </div>
 
 
+        <div className="form-card-container">
+          <form className="form-card" onSubmit={handleSubmit}>
+            <div className="form-header"><h2 className="form-title" >Login</h2> <img src="/logo.png" alt="" className="small-logo" /></div>
 
-          <button type="submit" disabled={!isValid}>
-            Login
-          </button>
-        </form>
+            {/* USERNAME FIELD */}
+            <div className="input-group">
+              {touched.username && errors.username ? (
+                <p className="error-text">{errors.username}</p>
+              ) : (
+                <p className="error-text hidden-text">placeholder</p>
+              )}
+              <input
+                type="text"
+                placeholder="Username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                onBlur={() => handleBlur("username")}
+                className={touched.username && errors.username ? "invalid" : ""}
+              />
+            </div>
+
+            {/* PASSWORD FIELD */}
+            <div className="input-group">
+              {touched.password && errors.password ? (
+                <p className="error-text">{errors.password}</p>
+              ) : (
+                <p className="error-text hidden-text">placeholder</p>
+              )}
+              <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onBlur={() => handleBlur("password")}
+                className={touched.password && errors.password ? "invalid" : ""}
+              />
+            </div>
+
+
+
+            <button className="form-button" type="submit" disabled={!isValid}>
+              Login
+            </button>
+          </form>
+        </div>
+
+        <div className="card-img" id="login-img"></div>
       </div>
-
-      <div className="card-img" id="login-img"></div>
-    </div>
 
     </>
   );
