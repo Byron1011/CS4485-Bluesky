@@ -17,6 +17,8 @@ ner_model = spacy.load("en_core_web_sm")
 geolocator = Nominatim(user_agent="geo_demo", timeout=100)
 
 classifier = pipeline("text-classification", model ="elam2909/bert-disaster-classifier")
+# this second model didnt actually end up working, gonna use a keyword based approach for now
+#sev_classifier = pipeline("text-classification", model ="AliArshad/Severity_Predictor")
 
 @app.route("/ner", methods=["POST"])
 def ner():
@@ -91,31 +93,75 @@ def predict_disaster():
         # Run model only on unique texts
         results = classifier(unique_texts, truncation=True)
 
+        # Heuristic-based severity estimation keywords
+        HIGH_SEVERITY = {
+            "massive", "devastating", "catastrophic", "destroyed", "collapsed",
+            "major", "deadly", "fatalities", "many dead", "thousands", "emergency",
+            "disaster", "severe", "widespread", "explosion", "hurricane", "earthquake"
+        }
+        MODERATE_SEVERITY = {
+            "damaged", "injured", "significant", "bad", "dangerous",
+            "strong", "heavy", "serious", "impact", "evacuated", "evacuations"
+        }
+        LOW_SEVERITY = {
+            "minor", "small", "contained", "under control",
+            "low", "isolated", "light", "brief"
+        }
+
+        def estimate_severity(text):
+            """Simple keyword-based severity estimator"""
+            lower = text.lower()
+            high_hits = sum(kw in lower for kw in HIGH_SEVERITY)
+            mod_hits = sum(kw in lower for kw in MODERATE_SEVERITY)
+            low_hits = sum(kw in lower for kw in LOW_SEVERITY)
+
+            if high_hits >= 2 or (high_hits and mod_hits):
+                return "severe"
+            elif mod_hits >= 2 or (high_hits and not mod_hits):
+                return "moderate"
+            elif low_hits >= 1:
+                return "low"
+            else:
+                return "unknown"
+
         # Normalize results into label/score pairs
         normalized = []
-        for r in results:
+        for i, r in enumerate(results):
             if isinstance(r, list) and r:
                 lab = r[0].get("label")
                 sc = r[0].get("score")
             else:
                 lab = r.get("label")
                 sc = r.get("score")
-            normalized.append((lab, sc))
+
+            sev = "none"
+            if lab.lower().startswith("disaster") or "label_1" in lab.lower():
+                sev = estimate_severity(unique_texts[i])
+                """
+                sev_result = sev_classifier(unique_texts[i], truncation=True)[0]
+                sev_label = sev_result["label"].lower()
+                if "severe" in sev_label:
+                    sev = "high"
+                elif "non-severe" in sev_label:
+                    sev = "low"
+                """
+            normalized.append((lab, sc, sev))
 
         # Assign results back to each unique text
         for i, t in enumerate(unique_texts):
             seen[t] = normalized[i]
 
         # Build aligned output (reusing cached predictions for duplicates)
-        labels, scores = [], []
+        labels, scores, severities = [], [], []
         for t in texts:
             key = (t or "").strip()
-            lab, sc = seen.get(key, ("LABEL_0", 0.0))
+            lab, sc, sev = seen.get(key, ("LABEL_0", 0.0, "none"))
             labels.append(lab)
             scores.append(sc)
+            severities.append(sev)
 
         print(f"Classified {len(unique_texts)} unique texts out of {len(texts)} total.")
-        return jsonify({"labels": labels, "scores": scores})
+        return jsonify({"labels": labels, "scores": scores, "severities": severities})
 
     except Exception as e:
         print("Error during disaster classification:", e)

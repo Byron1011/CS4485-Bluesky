@@ -305,11 +305,15 @@ async function filterDisasterPosts(posts) {
     const data = await response.json();
     const labels = data.labels || [];
     const scores = data.scores || [];
+    const severities = data.severities || [];
 
     // Define criterion: LABEL_1 considered disaster (adjust if model uses different label)
     const filtered = posts.filter((p, i) => {
       const label = (labels[i] || '').toString().toLowerCase();
       const score = Number(scores[i] ?? 0);
+      const severity = (severities[i] || 'test severity').toString().toLowerCase();
+      // uncomment this line if you need to see severities in the console
+      //console.log('Severity: ', severity); 
       // Adjust threshold as needed. Keep if label suggests disaster and score >= 0.8
       return (label === 'label_1' || label.includes('disaster')) && score >= 0.8;
     });
