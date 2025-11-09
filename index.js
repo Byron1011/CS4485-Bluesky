@@ -202,6 +202,14 @@ function normalizeType(s) {
   return m;
 }
 
+function normalizeSeverity(s) {
+  const m = String(s || '').trim().toLowerCase();
+  if(["severe"].includes(m)) return 'severe';
+  if(["moderate"].includes(m)) return 'moderate';
+  if(["low"].includes(m)) return 'low';
+  if(["unknown"].includes(m)) return 'unknown';
+}
+
 //**********************************************
 //Shapes post into the document to upsert into DB
 //seedType: original search keyword
@@ -215,7 +223,8 @@ const normalize_DB = (p,seedType) => ({
      || p?.author?.did?.trim()
      || 'unknown',
    labels: {
-    disasterType: normalizeType(seedType)
+    disasterType: normalizeType(seedType),
+    severity: normalizeSeverity(seedType)
   },
   seedType
 })
@@ -318,8 +327,16 @@ async function filterDisasterPosts(posts) {
       return (label === 'label_1' || label.includes('disaster')) && score >= 0.8;
     });
 
+    const renormalized_posts = filtered.map((p, i) => ({
+      ...p,
+      labels: {
+        ...p.labels,
+        severity: severities[i] || "none"
+      }
+    }));
+
     console.log(`Filtered ${posts.length - filtered.length} non-disaster posts.`);
-    return filtered;
+    return renormalized_posts;
 
   } catch (err) {
     console.error("Error calling Flask disaster classifier:", err);

@@ -16,7 +16,7 @@ const postSchema = new mongoose.Schema ({
     //label for classification ( add more labels later [servirity, location] )
     labels: {
         disasterType: { type: String, index:true },
-
+        severity: { type: String, index: true}
     },
 
     coordinates: {
