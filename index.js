@@ -5,6 +5,14 @@ import mongoose from 'mongoose';
 import Post from './post_schema.js';
 import Resource from "./resource_schema.js";
 
+// for web sockets
+import { Server } from "socket.io";
+import http from "http";
+
+
+
+
+
 // For use of cookies
 import cookieParser from 'cookie-parser';
 import User from "./user_schema.js";
@@ -30,7 +38,7 @@ function isLoggedIn(req, res, next) {
 
   const token = req.cookies.token || (req.headers.authorization?.split(" ")[1]);
   if (!token) {
-    res.redirect("/login");
+    res.status(401).json({ error: "Must log in to complete action."});
     return;
   }
 
@@ -38,12 +46,44 @@ function isLoggedIn(req, res, next) {
     console.log(token);
     const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
     req.user = decoded;
+
+
     next();
+    return;
   } catch (err) {
-    res.redirect("/login");
+    res.status(401).json({ error: "Must log in to complete action."});
   }
 }
 
+// Middleware sets req.user if logged in, but does not stop / redirect request if they are not
+
+async function optionalAuth (req, res, next) {
+  const authHeader = req.headers.authorization || req.cookies?.token;
+
+  if (!authHeader) {
+    req.user = null;
+    return next(); // not logged in
+  }
+
+  try {
+    // support both "Bearer <token>" and direct cookie token
+    const token = authHeader.startsWith("Bearer ")
+      ? authHeader.split(" ")[1]
+      : authHeader;
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    req.user = await User.findById(decoded.id).select("_id username");
+  } catch {
+    req.user = null; // invalid token
+  }
+
+
+  if(req.user)
+    console.log(`user is logged in ${req.user}`);
+  else 
+    console.log("User not logged in");
+  next();
+};
 
 
 
@@ -109,6 +149,29 @@ const __dirname = path.dirname(__filename);
 app.use(express.static(path.join(__dirname, "/frontend/dist")));
 
 
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: `http://localhost:${PORT}`, // your React dev server
+    credentials: true,
+  },
+});
+
+io.on("connection", (socket) => {
+  console.log("User connected:", socket.id);
+
+  // dummy event to see if socket is working emit after 5 seconds
+  setTimeout(() => {
+    socket.emit("dummy-event", { message: "wag1!" });
+    console.log("dummy event sent from server");
+  }, 5000);
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
+  });
+});
+
+
 //****** MongoDB Atlas connection function ******
 async function start(){
   try{
@@ -130,7 +193,7 @@ async function start(){
 
     console.log(`TTL index created on Post.createdAt (expires after ${ttlDays} days)`);
     
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
     console.log(`Server started at: http://localhost:${PORT}`);
     // console.log(`Search & Save: /search-save?q=<disaster type> &limit= <~100>`)
     // console.log(`EXAMPLE:  /search-save?q=flood&limit=50`);
@@ -816,6 +879,12 @@ app.get("/me", async (req, res) => {
   }
 });
 
+app.get("/api/chats", isLoggedIn, async (req, res) => {
+
+  console.log("getting there");
+  res.status(200).json({message: "bomba"});
+});
+
 // serve react index file for all other requests not handled
 app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, "frontend/dist", "index.html"));
@@ -867,9 +936,11 @@ async function refreshAllDisasterData() {
 start().then(() => {
   console.log(`\nApp and DB initialized successfully`);
 
-  // Run immediately on startup
-  refreshAllDisasterData();
+// NOTE I TURNED THESE OFF FOR FASTER DEVELOPING
 
-  // Then repeat every 15 minutes
-  setInterval(refreshAllDisasterData, 15 * 60 * 1000);
+  // Run immediately on startup
+  // refreshAllDisasterData();
+
+  // // Then repeat every 15 minutes
+  // setInterval(refreshAllDisasterData, 15 * 60 * 1000);
 });

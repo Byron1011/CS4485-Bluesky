@@ -6,6 +6,8 @@ import Protected from "./Protected.jsx";
 import Analytics from "./components/Analytics.jsx";
 import Topbar from "./components/TopBar.jsx";
 import User from "./User.jsx";
+import ChatList from "./ChatList.jsx";
+
 
 export default function Root() {
   return (
@@ -19,6 +21,7 @@ export default function Root() {
         <Route path="/register" element={<Register />} />
 
         {/* pages */}
+        <Route path="/chats/index" element={<ChatList />} />         {/* Dashboard page */}
         <Route path="/dashboard" element={<App />} />         {/* Dashboard page */}
         <Route path="/analytics" element={<Analytics />} />   {/* Analytics page */}
         <Route path="/protected" element={<Protected />} />    {/* protected page */}
