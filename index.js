@@ -474,47 +474,47 @@ app.get('/search-save', async (req, res) => {
 });
 
 // TESTING python server
-app.get("/api/ner", async (req, res) => {
-  const raw_posts = [
-    {
-      username: "sso1",
-      text: "I need help in an undisclosed location"
-    },
-    {
-      username: "sso2",
-      text: "There is an earthquake in Tokyo, Japan"
-    },
-    {
-      username: "sso3",
-      text: "There is a wildfire heading towards Richardson, Texas"
-    }
-  ];
+// app.get("/api/ner", async (req, res) => {
+//   const raw_posts = [
+//     {
+//       username: "sso1",
+//       text: "I need help in an undisclosed location"
+//     },
+//     {
+//       username: "sso2",
+//       text: "There is an earthquake in Tokyo, Japan"
+//     },
+//     {
+//       username: "sso3",
+//       text: "There is a wildfire heading towards Richardson, Texas"
+//     }
+//   ];
 
 
 
-  try {
-    // Wait for the Flask server’s response
-    const response = await fetch(`http://localhost:${PYTHON_PORT}/ner`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ raw_posts })
-    });
+//   try {
+//     // Wait for the Flask server’s response
+//     const response = await fetch(`http://localhost:${PYTHON_PORT}/ner`, {
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify({ raw_posts })
+//     });
 
-    // error handler
-    if (!response.ok) {
-      throw new Error(`Flask server returned ${response.status}`);
-    }
+//     // error handler
+//     if (!response.ok) {
+//       throw new Error(`Flask server returned ${response.status}`);
+//     }
 
-    // wait for text to be labeled
-    const result = await response.json();
+//     // wait for text to be labeled
+//     const result = await response.json();
 
-    // display on front end
-    res.json({ success: true, result });
-  } catch (err) {
-    console.error("NER request failed:", err);
-    res.status(500).json({ error: "NER service unavailable" });
-  }
-});
+//     // display on front end
+//     res.json({ success: true, result });
+//   } catch (err) {
+//     console.error("NER request failed:", err);
+//     res.status(500).json({ error: "NER service unavailable" });
+//   }
+// });
 
 async function add_coordinates(raw_posts){
 
@@ -879,7 +879,87 @@ app.get("/me", async (req, res) => {
   }
 });
 
+//**********************************************
+// Create a new chat
+app.post('/api/chat/new', async (req, res) => {
+  try {
+    const { userIds } = req.body;
+
+    // Validate userIds array exists and has at least 2 users
+    if (!Array.isArray(userIds) || userIds.length < 2) {
+      return res.status(400).json({ error: "Must provide at least 2 user IDs" });
+    }
+
+    // Verify all user IDs are valid
+    const users = await User.find({ _id: { $in: userIds } });
+    if (users.length !== userIds.length) {
+      return res.status(404).json({ error: "One or more user IDs are invalid" });
+    }
+
+    // Create new chat
+    const chat = new Chat({
+      users: userIds,
+      messages: []
+    });
+    await chat.save();
+
+    // Add chat reference to all users
+    await User.updateMany(
+      { _id: { $in: userIds } },
+      { $push: { chats: chat._id } }
+    );
+
+    res.status(201).json({ chatId: chat._id });
+  } catch (err) {
+    console.error("Error creating chat:", err);
+    res.status(500).json({ error: "Failed to create chat" });
+  }
+});
+
+
+// returns user documents with a given prefix
+app.get('/api/users/search', async (req, res) => {
+  try {
+    const { prefix } = req.query;
+
+    if (!prefix || typeof prefix !== 'string') {
+      return res.status(400).json({ error: "Prefix is required" });
+    }
+
+    // Find users whose username starts with the prefix (case-insensitive)
+    // Return full user documents (excluding sensitive passwordHash)
+    const usersMatching = await User.find({
+      username: { $regex: `^${prefix}`, $options: 'i' }
+    })
+    .select('-passwordHash') // Exclude password hash for security
+    .lean();
+
+    res.status(200).json({ usersMatching });
+  } catch (err) {
+    console.error("Error searching users:", err);
+    res.status(500).json({ error: "Failed to search users" });
+  }
+});
+
+
+// Get users list of chats NOT FINSIHED TODO
 app.get("/api/chats", isLoggedIn, async (req, res) => {
+
+  const user_info = req.user;
+
+  const user = await User.findById(user_info.id);
+
+
+  if(!user) {
+    console.log("ruh roh")
+    return
+  }
+
+
+
+  // TODO FINISH THIS ROUTE
+  // MANUALLY CREATES A CHAT TO TEST IF WE CAN SEE CHATS
+
 
   console.log("getting there");
   res.status(200).json({message: "bomba"});
