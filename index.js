@@ -11,6 +11,8 @@ import User from "./user_schema.js";
 
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import Chat from "./chat_schema.js";
+import Message from "./message_schema.js";
 
 const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY;
 
@@ -775,7 +777,6 @@ app.get('/analytics/top-countries-over-time', async (req, res) => {
   }
 });
 
-
 // Types over time (date × disasterType) for stacked area chart
 app.get('/analytics/types-over-time', async (req, res) => {
   try {
@@ -815,6 +816,67 @@ app.get("/me", async (req, res) => {
     return res.json({ user: null });
   }
 });
+
+//**********************************************
+// Create a new chat
+app.post('/api/chat/new', async (req, res) => {
+  try {
+    const { userIds } = req.body;
+
+    // Validate userIds array exists and has at least 2 users
+    if (!Array.isArray(userIds) || userIds.length < 2) {
+      return res.status(400).json({ error: "Must provide at least 2 user IDs" });
+    }
+
+    // Verify all user IDs are valid
+    const users = await User.find({ _id: { $in: userIds } });
+    if (users.length !== userIds.length) {
+      return res.status(404).json({ error: "One or more user IDs are invalid" });
+    }
+
+    // Create new chat
+    const chat = new Chat({
+      users: userIds,
+      messages: []
+    });
+    await chat.save();
+
+    // Add chat reference to all users
+    await User.updateMany(
+      { _id: { $in: userIds } },
+      { $push: { chats: chat._id } }
+    );
+
+    res.status(201).json({ chatId: chat._id });
+  } catch (err) {
+    console.error("Error creating chat:", err);
+    res.status(500).json({ error: "Failed to create chat" });
+  }
+});
+
+app.get('/api/users/search', async (req, res) => {
+  try {
+    const { prefix } = req.query;
+
+    if (!prefix || typeof prefix !== 'string') {
+      return res.status(400).json({ error: "Prefix is required" });
+    }
+
+    // Find users whose username starts with the prefix (case-insensitive)
+    // Return full user documents (excluding sensitive passwordHash)
+    const usersMatching = await User.find({
+      username: { $regex: `^${prefix}`, $options: 'i' }
+    })
+    .select('-passwordHash') // Exclude password hash for security
+    .lean();
+
+    res.status(200).json({ usersMatching });
+  } catch (err) {
+    console.error("Error searching users:", err);
+    res.status(500).json({ error: "Failed to search users" });
+  }
+});
+
 
 // serve react index file for all other requests not handled
 app.get(/.*/, (req, res) => {
