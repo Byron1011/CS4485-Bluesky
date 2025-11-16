@@ -385,7 +385,7 @@ async function filterDisasterPosts(posts) {
       const score = Number(scores[i] ?? 0);
       const severity = (severities[i] || 'test severity').toString().toLowerCase();
       // uncomment this line if you need to see severities in the console
-      //console.log('Severity: ', severity); 
+      console.log('Severity: ', severity); 
       // Adjust threshold as needed. Keep if label suggests disaster and score >= 0.8
       return (label === 'label_1' || label.includes('disaster')) && score >= 0.8;
     });
@@ -1019,8 +1019,8 @@ start().then(() => {
 // NOTE I TURNED THESE OFF FOR FASTER DEVELOPING
 
   // Run immediately on startup
-  // refreshAllDisasterData();
+  refreshAllDisasterData();
 
   // // Then repeat every 15 minutes
-  // setInterval(refreshAllDisasterData, 15 * 60 * 1000);
+  setInterval(refreshAllDisasterData, 15 * 60 * 1000);
 });

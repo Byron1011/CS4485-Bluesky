@@ -17,8 +17,8 @@ ner_model = spacy.load("en_core_web_sm")
 geolocator = Nominatim(user_agent="geo_demo", timeout=100)
 
 classifier = pipeline("text-classification", model ="elam2909/bert-disaster-classifier")
-# this second model didnt actually end up working, gonna use a keyword based approach for now
-#sev_classifier = pipeline("text-classification", model ="AliArshad/Severity_Predictor")
+# this second model is EXTREMELY sensitive, so it needs to be combined with the keyword approach to properly work
+sev_classifier = pipeline("text-classification", model ="AliArshad/Severity_Predictor")
 
 @app.route("/ner", methods=["POST"])
 def ner():
@@ -81,7 +81,7 @@ def predict_disaster():
         return jsonify({"error": "texts must be a list"}), 400
 
     try:
-        # Deduplicate texts (preserving order)
+        # deduplicates texts
         seen = {}
         unique_texts = []
         for t in texts:
@@ -90,81 +90,104 @@ def predict_disaster():
                 seen[key] = None
                 unique_texts.append(key)
 
-        # Run model only on unique texts
-        results = classifier(unique_texts, truncation=True)
-
-        # Heuristic-based severity estimation keywords
-        HIGH_SEVERITY = {
-            "massive", "devastating", "catastrophic", "destroyed", "collapsed",
-            "major", "deadly", "fatalities", "many dead", "thousands", "emergency",
-            "disaster", "severe", "widespread", "explosion", "hurricane", "earthquake"
-        }
-        MODERATE_SEVERITY = {
-            "damaged", "injured", "significant", "bad", "dangerous",
-            "strong", "heavy", "serious", "impact", "evacuated", "evacuations"
-        }
-        LOW_SEVERITY = {
-            "minor", "small", "contained", "under control",
-            "low", "isolated", "light", "brief"
-        }
-
-        def estimate_severity(text):
-            """Simple keyword-based severity estimator"""
-            lower = text.lower()
-            high_hits = sum(kw in lower for kw in HIGH_SEVERITY)
-            mod_hits = sum(kw in lower for kw in MODERATE_SEVERITY)
-            low_hits = sum(kw in lower for kw in LOW_SEVERITY)
-
-            if high_hits >= 2 or (high_hits and mod_hits):
-                return "severe"
-            elif mod_hits >= 2 or (high_hits and not mod_hits):
-                return "moderate"
-            elif low_hits >= 1:
-                return "low"
-            else:
-                return "unknown"
-
-        # Normalize results into label/score pairs
-        normalized = []
-        for i, r in enumerate(results):
+        # Disaster classification, runs only on unique posts
+        disaster_results = classifier(unique_texts, truncation=True)
+        disaster_labels = []
+        disaster_scores = []
+        for r in disaster_results:
             if isinstance(r, list) and r:
-                lab = r[0].get("label")
-                sc = r[0].get("score")
+                lab = r[0].get("label", "").lower()
+                sc = r[0].get("score", 0.0)
             else:
-                lab = r.get("label")
-                sc = r.get("score")
+                lab = r.get("label", "").lower()
+                sc = r.get("score", 0.0)
+            disaster_labels.append(lab)
+            disaster_scores.append(sc)
 
-            sev = "none"
-            if lab.lower().startswith("disaster") or "label_1" in lab.lower():
-                sev = estimate_severity(unique_texts[i])
-                """
-                sev_result = sev_classifier(unique_texts[i], truncation=True)[0]
-                sev_label = sev_result["label"].lower()
-                if "severe" in sev_label:
-                    sev = "high"
-                elif "non-severe" in sev_label:
-                    sev = "low"
-                """
-            normalized.append((lab, sc, sev))
+        # Severity binary classifier
+        sev_results = sev_classifier(unique_texts, truncation=True)
+        sev_labels = []
+        sev_scores = []
+        for r in sev_results:
+            if isinstance(r, list) and r:
+                lab = r[0].get("label", "").lower()
+                sc = r[0].get("score", 0.0)
+            else:
+                lab = r.get("label", "").lower()
+                sc = r.get("score", 0.0)
+            sev_labels.append(lab)
+            sev_scores.append(sc)
 
-        # Assign results back to each unique text
-        for i, t in enumerate(unique_texts):
-            seen[t] = normalized[i]
+        # Keyword severity mapping, acts as a second layer of filtering, can add more keywords later
+        HIGH = {"massive","devastating","catastrophic","destroyed","collapsed","major","deadly","fatalities","many dead","thousands","emergency","severe",
+                "widespread","explosion","hurricane","earthquake", "calamity", "cataclysm"}
+        MOD = {"damaged","injured","significant","bad","dangerous","strong","heavy","serious","impact","evacuated","evacuations", "disaster", "emergency", "moderate"}
+        LOW = {"minor","small","contained","under control","low","isolated","light","brief", "mini", "miniature", "tiny"}
 
-        # Build aligned output (reusing cached predictions for duplicates)
-        labels, scores, severities = [], [], []
+        def keyword_counts(text):
+            t = (text or "").lower()
+            hi = sum(1 for k in HIGH if k in t)
+            mo = sum(1 for k in MOD if k in t)
+            lo = sum(1 for k in LOW if k in t)
+            return hi, mo, lo
+
+        # severity classification
+        final_severities = []
+        for i, txt in enumerate(unique_texts):
+            dlab = disaster_labels[i]
+
+            # If it's not a disaster, leave severity empty
+            if not ("label_1" in dlab or "disaster" in dlab):
+                final_severities.append("none")
+                continue
+
+            sev_lab = sev_labels[i]
+            sev_score = sev_scores[i]
+            hi, mo, lo = keyword_counts(txt)
+
+            # model decides if severity FLOOR is low or moderate, due to the sensitivity of the model
+            if sev_lab == "label_1":   # model says severe
+                baseline = "moderate"
+            else:                      # model says non-severe
+                baseline = "low"
+
+            # uses the keywords as a second layer of filtering
+            # strong indicators → severe
+            if hi >= 1:
+                severity = "severe"
+            # one moderate → moderate
+            elif mo >= 1:
+                severity = "moderate"
+            # weak evidence → low
+            elif lo >= 1:
+                severity = "low"
+            else:
+                severity = baseline   # fall back to model floor
+
+            final_severities.append(severity)
+
+
+        # Save results into seen
+        for i, txt in enumerate(unique_texts):
+            seen[txt] = (disaster_labels[i], disaster_scores[i], final_severities[i])
+
+        # Map back to original
+        out_labels, out_scores, out_sev = [], [], []
         for t in texts:
             key = (t or "").strip()
-            lab, sc, sev = seen.get(key, ("LABEL_0", 0.0, "none"))
-            labels.append(lab)
-            scores.append(sc)
-            severities.append(sev)
+            lbl, sc, sev = seen.get(key, ("label_0", 0.0, "none"))
+            out_labels.append(lbl)
+            out_scores.append(sc)
+            out_sev.append(sev)
 
-        print(f"Classified {len(unique_texts)} unique texts out of {len(texts)} total.")
-        return jsonify({"labels": labels, "scores": scores, "severities": severities})
+        # debug stuff, uncomment if you need to see the labels + the scores for the severities and the final classification for the posts
+        #print("DEBUG: sev_labels, sev_scores:", list(zip(sev_labels, sev_scores))[:10])
+        #print("DEBUG: final severity:", out_sev[:10])
+
+        return jsonify({"labels": out_labels, "scores": out_scores, "severities": out_sev})
 
     except Exception as e:
-        print("Error during disaster classification:", e)
+        print("Error in predict_disaster:", e)
         return jsonify({"error": str(e)}), 500
 
 
