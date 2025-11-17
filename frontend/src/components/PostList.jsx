@@ -16,7 +16,7 @@ export default function PostList({ posts = [], selectedPostId = null, onSelectPo
   return (
     <div className="posts">
       {posts.map((p) => {
-        const isSelected = p.id === selectedPostId;
+        const isSelected = p.id != null && p.id === selectedPostId;
 
         // Show "Other" when disasterType is empty/whitespace
         const typeLabel = (p.disasterType || '').trim() || 'Other';
@@ -61,7 +61,24 @@ export default function PostList({ posts = [], selectedPostId = null, onSelectPo
                 ) : null}
               </span>
 
-              {/* show button on selected posts*/}
+              {(() => {
+                const raw = p.severityLevel;
+                const label = String(raw ?? '').trim();
+                const lc = label.toLowerCase();
+                const cls =
+                  lc === 'severe'                         ? 'pill--sev-severe'   :
+                  lc === 'moderate' || lc === 'medium'    ? 'pill--sev-moderate' :
+                  lc === 'low'                            ? 'pill--sev-low'      :
+                                                            'pill--sev-unknown';
+                const shown = label || 'unknown';
+                return (
+                  <span className={`pill ${cls}`} aria-label={`Severity ${shown}`}>
+                    <span className="pill-key">Severity:</span>
+                    <span className="pill-val">{shown}</span>
+                  </span>
+                );
+              })()}
+
               {isSelected && (
                 <button
                   className="chip chip-cta"
