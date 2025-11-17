@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 import logoUrl from "./assets/logo.png";
 
@@ -18,6 +18,8 @@ export default function Login() {
   useEnsureTheme();
   const { login } = useAuth();
   const nav = useNavigate();
+  const location = useLocation();
+  const flash = location.state?.flash;
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
@@ -51,6 +53,12 @@ export default function Login() {
         <section className="auth-form-card">
           <h1 className="auth-title">Login</h1>
           <p className="auth-subtitle">Sign in to access full dashboard, or continue using as Guest</p>
+
+          {flash && flash.type === "success" && (
+            <div className="flash-card flash-card--success">
+              {flash.text}
+            </div>
+          )}
 
           {err ? <div className="error-card">{String(err)}</div> : null}
 
