@@ -552,24 +552,42 @@ function Dashboard() {
   };
 
   if (loading) {
-    return (
-      <>
-        <div style={{ padding: 20, display:'flex', alignItems:'center', gap:10 }}>
-          <span className="spinner" aria-label="Loading" /> <span>Loading posts…</span>
+  return (
+    <div className="page">
+      <div className="app">
+        <div className="fullscreen-center">
+          <span className="spinner" aria-label="Loading" />
+          <span style={{ marginLeft: 10 }}>Loading posts…</span>
         </div>
-      </>
-    );
-  }
-  if (error) {
-    return (
-      <>
-        <div className="error-card" role="alert">
-          <strong>Couldn’t load posts.</strong>
-          <div style={{ marginTop: 6 }}>{String(error)}</div>
+
+        <footer className="site-footer" aria-label="Footer">
+          <img src={logoUrl} alt="BlueSky Crisis Intel logo" className="footer-logo" />
+          <div className="footer-mark">Crisis &amp; Disaster Dashboard</div>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+if (error) {
+  return (
+    <div className="page">
+      <div className="app">
+        <div className="fullscreen-center">
+          <div className="error-card" role="alert">
+            <strong>Couldn’t load posts.</strong>
+            <div style={{ marginTop: 6 }}>{String(error)}</div>
+          </div>
         </div>
-      </>
-    );
-  }
+
+        <footer className="site-footer" aria-label="Footer">
+          <img src={logoUrl} alt="BlueSky Crisis Intel logo" className="footer-logo" />
+          <div className="footer-mark">Crisis &amp; Disaster Dashboard</div>
+        </footer>
+      </div>
+    </div>
+  );
+}
 
   return (
   <>
