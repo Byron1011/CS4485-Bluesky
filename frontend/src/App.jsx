@@ -82,14 +82,108 @@ function normalizeApiResults(apiRows) {
       return true;
     });
 
-    // skip this post entirely if no valid coordinates
-    if (!coords.length) continue;
+    let lat = null;
+    let lon = null;
+    if (coords.length) {
+      [lat, lon] = coords[0].map(Number);
+    }
 
-    // use only the first valid coordinate
-    const [lat, lon] = coords[0].map(Number);
+    const sevCandidate =
+      // direct / flat
+      r?.severity ?? r?.severityLevel ?? r?.severity_level ?? r?.severityLabel ?? r?.severity_label ??
+      // nested under labels
+      r?.labels?.severity ?? r?.labels?.severityLevel ?? r?.labels?.severity_level ??
+      r?.labels?.severityLabel ?? r?.labels?.severity_label ??
+      // nested under meta
+      r?.meta?.severity ?? r?.meta?.severityLevel ?? r?.meta?.severity_level ??
+      r?.meta?.severityLabel ?? r?.meta?.severity_label ??
+      // score-only fields
+      r?.severityScore ?? r?.severity_score ??
+      r?.labels?.severityScore ?? r?.labels?.severity_score ??
+      r?.meta?.severityScore ?? r?.meta?.severity_score ??
+      // object wrappers commonly returned by classifiers
+      r?.classification?.severity ?? r?.llm?.severity ??
+      null;
+
+    let severityLevel = '';
+    let severityScore = null;
+
+    // helper: bucket a 0..1 score into a level
+    const levelFromScore = (s) => (s >= 0.66 ? 'severe' : s >= 0.33 ? 'moderate' : 'low');
+
+    if (typeof sevCandidate === 'string') {
+      const raw = sevCandidate.trim();
+      const s = raw.toLowerCase();
+
+      // Case 1
+      const n = Number(s);
+      if (Number.isFinite(n)) {
+        const clamped = Math.max(0, Math.min(1, n));
+        severityScore = clamped;
+        severityLevel = levelFromScore(clamped);
+      } else {
+        // Case 2
+        const norm =
+          s === 'medium' ? 'moderate' :
+          s === 'med'    ? 'moderate' :
+          s === 'mid'    ? 'moderate' :
+          s === 'high'   ? 'severe'   :
+          s === 'extreme'? 'severe'   :
+          s === 'crit'   ? 'severe'   :
+          s === 'critical'? 'severe'  :
+          s;
+        if (['low','moderate','severe'].includes(norm)) {
+          severityLevel = norm;
+        } else {
+          // preserve unknown/other text so the pill shows what backend said
+          severityLevel = raw;
+        }
+      }
+    } else if (typeof sevCandidate === 'number' && Number.isFinite(sevCandidate)) {
+      const s = Math.max(0, Math.min(1, sevCandidate));
+      severityScore = s;
+      severityLevel = levelFromScore(s);
+    } else if (sevCandidate && typeof sevCandidate === 'object') {
+      // allow  { level, score } OR { severityLevel, severityScore } OR { label, value }
+      const lvl =
+        sevCandidate.level ?? sevCandidate.severityLevel ?? sevCandidate.severity_level ?? sevCandidate.label ?? '';
+      let scr =
+        sevCandidate.score ?? sevCandidate.severityScore ?? sevCandidate.severity_score ?? sevCandidate.value ?? null;
+
+      
+      if (typeof scr === 'string') {
+        const n = Number(scr.trim());
+        if (Number.isFinite(n)) scr = n;
+      }
+
+      if (typeof lvl === 'string' && lvl.trim()) {
+        const s = lvl.trim().toLowerCase();
+        const norm =
+          s === 'medium' ? 'moderate' :
+          s === 'med'    ? 'moderate' :
+          s === 'mid'    ? 'moderate' :
+          s === 'high'   ? 'severe'   :
+          s === 'extreme'? 'severe'   :
+          s === 'crit'   ? 'severe'   :
+          s === 'critical'? 'severe'  :
+          s;
+        severityLevel = norm;
+      }
+      if (typeof scr === 'number' && Number.isFinite(scr)) {
+        const clamped = Math.max(0, Math.min(1, scr));
+        severityScore = clamped;
+        if (!severityLevel || ['unknown','',null].includes(String(severityLevel).toLowerCase())) {
+          severityLevel = levelFromScore(clamped);
+        }
+      }
+    }
+
+    const safeId =
+      (r.postId ?? r.id ?? r._id) ??
+      `${Date.parse(r.createdAt) || 0}-${Math.random().toString(36).slice(2,8)}`;
 
     out.push({
-      id: r.postId,
+      id: safeId,
       postId: r.postId,
       username: extractUser(r),
       text: r.text ?? "",
@@ -97,14 +191,17 @@ function normalizeApiResults(apiRows) {
       createdAt: r.createdAt,
       lat,
       lng: lon,
-      url: ""
+      url: "",
+      severityLevel,    // "low" | "moderate" | "severe" | "" (or raw text)
+      severityScore     // 0..1 or null
     });
   }
 
   // deduplicate by postId if needed
   const uniqueOut = Object.values(
     out.reduce((acc, item) => {
-      acc[item.postId] = item;
+      const k = (item.postId ?? item.id);
+      if (k != null && k !== '') acc[k] = item;
       return acc;
     }, {})
   );
@@ -253,6 +350,9 @@ function Dashboard() {
 
         const { rows, total } = await fetchAllPosts({ withCoords: false });
         const normalized = normalizeApiResults(rows);
+
+        console.log('[SAMPLE]', rows[0]);
+        console.log('[NORMALIZED SAMPLE]', normalized[0]);
 
         if (!cancelled) {
           setPosts(normalized);
@@ -572,7 +672,7 @@ function Dashboard() {
           {/* right map */}
           <div className="col">
             <div className="col-top">
-              <h2 className="col-title">Disaster Map: Posts per km<sup>2</sup></h2>
+              <h2 className="col-title">Disaster Map: </h2>
             </div>
 
             <div className="col-body">
