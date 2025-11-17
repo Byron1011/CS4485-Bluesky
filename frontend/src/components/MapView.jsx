@@ -111,6 +111,9 @@ export default function MapView({
   const markersLayerRef = useRef(null);
   const markerByIdRef = useRef(new Map());
 
+  const markerGroupsRef = useRef(new Map());
+  const markerGroupIndexRef = useRef(new Map());
+
   const heatRef = useRef(null); // For density heatmap
   const severityLayerRef = useRef(null); 
   const heatConfRef = useRef({ radius: 0, blur: 0, minOpacity: 0.0 });
@@ -233,10 +236,46 @@ const severityGridSizeForZoom = () => SEVERITY_CELL_DEG;
   };
   };
 
+  const groupKeyFor = (lat, lng) => `${lat.toFixed(5)}|${lng.toFixed(5)}`;
+
   const bringLayerToBack  = (layer) => { if (layer?.bringToBack)  layer.bringToBack();  };
   const bringLayerToFront = (layer) => { if (layer?.bringToFront) layer.bringToFront(); };
 
-  // ===== Heat data builder
+  // jump to previous/next post that shares this location
+  const openPostInGroup = (currentPostId, direction) => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const idxInfo = markerGroupIndexRef.current.get(currentPostId);
+    if (!idxInfo) return;
+
+    const { groupKey, index, size } = idxInfo;
+    const group = markerGroupsRef.current.get(groupKey);
+    if (!group || !group.posts || group.posts.length === 0) return;
+
+    const total = size || group.posts.length;
+    if (total <= 1) return;
+
+    let nextIndex = index + direction;
+    if (nextIndex < 0) nextIndex = total - 1;
+    if (nextIndex >= total) nextIndex = 0;
+
+    const nextPost = group.posts[nextIndex];
+    if (!nextPost) return;
+
+    const mk = markerByIdRef.current.get(nextPost.id);
+    if (!mk) return;
+
+    // update selection (PostList + marker styling)
+    onSelectPost?.(nextPost.id);
+
+    // bring marker to front so it’s visible on top of the stack
+    if (mk.bringToFront) mk.bringToFront();
+    if (markersLayerRef.current) bringLayerToFront(markersLayerRef.current);
+
+    // open popup for the new post
+    mk.openPopup();
+  };
 
   // Density heatmap = bucket posts into grid cells, convert to posts/km, normalize.
   const buildDensityHeatData = (z) => {
@@ -491,10 +530,43 @@ const severityGridSizeForZoom = () => SEVERITY_CELL_DEG;
     updateSeverity();
     updateLegendForMode();
   };
-
+  
   // ===== Markers 
   const rebuildMarkers = () => {
     if (!mapRef.current) return;
+
+    //build groups of posts that share same location
+    const groups = new Map();
+    const groupIndex = new Map();
+
+    for (const p of postsRef.current) {
+      const lat = p.lat ?? p.latitude;
+      const lng = p.lng ?? p.longitude;
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+      if (p.id == null) continue;
+
+      const key = groupKeyFor(lat, lng);
+      let g = groups.get(key);
+      if (!g) {
+        g = { key, lat, lng, posts: [] };
+        groups.set(key, g);
+      }
+      g.posts.push(p);
+    }
+
+    // Fill index lookup: postId -> { groupKey, index, size }
+    groups.forEach((g) => {
+      g.posts.forEach((p, idx) => {
+        groupIndex.set(p.id, {
+          groupKey: g.key,
+          index: idx,
+          size: g.posts.length,
+        });
+      });
+    });
+
+    markerGroupsRef.current = groups;
+    markerGroupIndexRef.current = groupIndex;
 
     if (!markersLayerRef.current) {
       markersLayerRef.current = L.layerGroup().addTo(mapRef.current);
@@ -515,6 +587,11 @@ const severityGridSizeForZoom = () => SEVERITY_CELL_DEG;
       const sevHas = hasSeverity(p);
       const sevLabel = sevHas ? String(p.severityLevel).trim() : '—';
 
+      const idxInfo = markerGroupIndexRef.current.get(String(p.id));
+      const idx = idxInfo?.index ?? 0;
+      const size = idxInfo?.size ?? 1;
+      const hasGroupNav = size > 1;
+
       const popupHtml = `
         <div style="max-width:260px;line-height:1.25">
           <div style="font-weight:600;margin-bottom:4px">@${(p.username || 'unknown')}</div>
@@ -525,6 +602,17 @@ const severityGridSizeForZoom = () => SEVERITY_CELL_DEG;
             <br/>
             ${p.createdAt ? new Date(p.createdAt).toLocaleString() : ''}
           </div>
+          ${
+            hasGroupNav
+              ? `
+              <div class="popup-nav" data-post-id="${p.id}">
+                <button type="button" class="popup-nav-btn" data-dir="-1" aria-label="Previous nearby report">↑</button>
+                <span class="popup-nav-label">${idx + 1} / ${size}</span>
+                <button type="button" class="popup-nav-btn" data-dir="1" aria-label="Next nearby report">↓</button>
+              </div>
+              `
+              : ''
+          }
         </div>
       `;
 
@@ -533,19 +621,34 @@ const severityGridSizeForZoom = () => SEVERITY_CELL_DEG;
         pane: 'markers',
         renderer: markersRendererRef.current,
       })
-      .bindPopup(popupHtml, { autoPan: false, className: 'post-popup' })
-      .on('click', (e) => {
-      
-        if (e.originalEvent) {
-          L.DomEvent.stop(e.originalEvent);  // stop propagation + prevent default
-        }
+        .bindPopup(popupHtml, { autoPan: false, className: 'post-popup' })
+        .on('click', (e) => {
+          if (e.originalEvent) {
+            L.DomEvent.stop(e.originalEvent);
+          }
+          onSelectPost?.(p.id);
+          mk.openPopup();
+        })
+        //when popup opens, wire up the arrow buttons
+        .on('popupopen', (e) => {
+        const container = e.popup.getElement();
+        if (!container) return;
 
-        // Always select this post when its marker is clicked
-        onSelectPost?.(p.id);
+        const nav = container.querySelector('.popup-nav');
+        if (!nav) return;
 
-        // Make sure the popup opens even if the same post was already selected
-        mk.openPopup();
-      });
+        const buttons = nav.querySelectorAll('.popup-nav-btn');
+
+        buttons.forEach((btn) => {
+          const dir = Number(btn.getAttribute('data-dir') || '0');
+
+          L.DomEvent.on(btn, 'click', (ev) => {
+            L.DomEvent.stop(ev);
+            // always use THIS marker’s id as the current one
+            openPostInGroup(p.id, dir);
+          });
+        });
+      })
 
       mk.addTo(markersLayerRef.current);
       markerByIdRef.current.set(p.id, mk);
@@ -554,11 +657,11 @@ const severityGridSizeForZoom = () => SEVERITY_CELL_DEG;
     // highlight selected
     if (selectedPostId != null) {
       const sel = markerByIdRef.current.get(selectedPostId);
-      const p = postsRef.current.find(pp => pp.id === selectedPostId);
+      const p = postsRef.current.find((pp) => pp.id === selectedPostId);
       if (sel && p) sel.setStyle(selectedStyleFor(p, p.disasterType, r));
     }
 
-    bringLayerToFront(markersLayerRef.current); // markers above heat
+    bringLayerToFront(markersLayerRef.current);
   };
 
   // ===== Legend controls & Mode/Metric controls
@@ -791,7 +894,11 @@ L.tileLayer(
     markerByIdRef.current.forEach((mk, id) => {
       const p = postsRef.current.find(pp => pp.id === id);
       if (!p) return;
-      mk.setStyle(id === selectedPostId ? selectedStyleFor(p, p.disasterType, r) : styleFor(p, p.disasterType, r));
+      mk.setStyle(
+        id === selectedPostId 
+        ? selectedStyleFor(p, p.disasterType, r) 
+        : styleFor(p, p.disasterType, r)
+      );
     });
   }, [selectedPostId]);
 
