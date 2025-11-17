@@ -585,6 +585,7 @@ app.get('/posts', async (req, res) => {
           createdAt: 1,
           author: 1,
           disasterType: '$labels.disasterType',
+          severity: '$labels.severity',
           coordinates: 1,
         }
       },
@@ -1024,3 +1025,4 @@ start().then(() => {
   // // Then repeat every 15 minutes
   setInterval(refreshAllDisasterData, 15 * 60 * 1000);
 });
+
