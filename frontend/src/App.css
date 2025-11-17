@@ -324,6 +324,7 @@ body {
   align-items: center;
   gap: 10px;
   min-width: 0;
+  transform: translateX(-12px);
   flex-wrap: nowrap;
   white-space: nowrap;
 }
@@ -338,6 +339,7 @@ body {
   max-width: 100%;
   overflow: visible;
   padding-top: 2px;
+  margin-left: auto;
 }
 
 .filters-right .chip {
@@ -392,6 +394,7 @@ body {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  height: var(--map-h);
 }
 
 /* left side posts list */
@@ -498,6 +501,8 @@ body {
 .search {
   height: 40px;
   width: 100%;
+  max-width: 440px;  /* was unconstrained */
+  flex: 0 0 440px;
   border: 1px solid var(--accent-300);
   border-radius: 18px;
   background: #fff;
@@ -687,6 +692,90 @@ body {
     white-space: normal;
   }
 }
+
+.map-metric {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  z-index: 700; /* above heat, below popups */
+  pointer-events: auto;
+}
+.map-metric-inner {
+  display: inline-flex;
+  gap: 6px;
+  padding: 6px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+.metric-btn.metric-btn--square {
+  min-width: 86px;
+  justify-content: center;
+}
+.metric-btn.active {
+  background: var(--accent-50);
+  border-color: var(--accent-300);
+}
+
+/* ===== Severity legend gradient ===== */
+.legend-gradient--severity .grad-bar {
+  height: 10px;
+  border-radius: 6px;
+  background: linear-gradient(90deg,
+    #c7f9cc 0%,
+    #88e27e 33%,
+    #f59e0b 66%,
+    #b91c1c 100%
+  );
+  border: 1px solid var(--line);
+}
+
+/* ===== Severity pill in Post List ===== */
+.pill {
+  display: inline-flex;          /* lets us place "Severity:" + value side-by-side */
+   align-items: center;
+   gap: 8px;                      /* space between label and value */
+   font-size: 13.5px;             /* bigger text */
+   line-height: 1.15;
+   padding: 8px 10px;             /* larger pad but still compact */
+   border-radius: 999px;
+   border: 1px solid var(--line);
+   background: var(--card);
+   white-space: nowrap;
+}
+
+.pill--sev-unknown {
+  background: #eef2f7;
+  border-color: #c7d0dc;
+  color: #22324a;
+}
+
+.pill--sev-low {
+  background: #eafbe9;
+  border-color: #b7e4b6;
+  color: #285b2a;
+}
+.pill--sev-moderate {
+  background: #fff5e6;
+  border-color: #f3d19b;
+  color: #7a4b00;
+}
+.pill--sev-severe {
+  background: #fde8e8;
+  border-color: #f1b0b0;
+  color: #7a1111;
+}
+
+/* Label + value inside the pill */
+.pill .pill-key {
+   font-weight: 700;
+   letter-spacing: 0.2px;
+ }
+ .pill .pill-val {
+   text-transform: capitalize;    /* "low" -> "Low"; keeps backend text readable */
+ }
 
 /*chip styles*/
 .chip {
@@ -1812,3 +1901,4 @@ button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
