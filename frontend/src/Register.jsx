@@ -1,9 +1,22 @@
-import { useState } from "react";
+import { useState, useEffect} from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 import logoUrl from "./assets/logo.png";
 
+/*keep dark mode*/
+function useEnsureTheme() {
+    useEffect(() => {
+        const cookie = document.cookie || "";
+        const isDark = /(?:^|;\s*)dark_theme=true(?:;|$)/.test(cookie);
+        const root = document.documentElement;
+        if (isDark) root.classList.add("dark-theme");
+        else root.classList.remove("dark-theme");
+    }, []);
+}
+
 export default function Register() {
+  useEnsureTheme();
+
   const { register } = useAuth();
   const nav = useNavigate();
   const [username, setUsername] = useState("");

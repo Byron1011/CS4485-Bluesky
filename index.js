@@ -632,7 +632,7 @@ app.get('/analytics/top-types', async (req, res) => {
 app.get("/analytics/total-posts", async (req, res) => {
   try {
     const count = await Post.countDocuments();
-    res.json({ total: count });  // <-- changed from totalPosts → total
+    res.json({ total: count });
   } catch (err) {
     console.error("Error fetching total posts:", err);
     res.status(500).json({ error: "server_error" });
