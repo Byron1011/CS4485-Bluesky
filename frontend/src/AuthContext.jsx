@@ -30,9 +30,29 @@ export function AuthProvider({ children }) {
             body: JSON.stringify({ username, password, role: "user" })
         });
         if (!res.ok) {
-            const data = await res.json().catch(() => ({}));
-            throw new Error(data?.error || "Registration failed");
-        }
+    let message = "Registration failed";
+
+    try {
+      const data = await res.json();
+      if (data?.error) {
+        message = data.error;
+      }
+    } catch {
+      try {
+        const text = await res.text();
+        if (text) message = text;
+      } catch {
+        // ignore
+      }
+    }
+
+    if (typeof message === "string" &&
+        /E11000.*duplicate key error/i.test(message)) {
+      message = "Username already taken. Please pick a different one.";
+    }
+
+    throw new Error(message);
+  }
     }
 
     async function login(username, password) {
