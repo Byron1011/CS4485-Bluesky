@@ -1,4 +1,4 @@
-import { useState, useEffect} from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 import logoUrl from "./assets/logo.png";
@@ -16,7 +16,6 @@ function useEnsureTheme() {
 
 export default function Register() {
   useEnsureTheme();
-
   const { register } = useAuth();
   const nav = useNavigate();
   const [username, setUsername] = useState("");
@@ -28,7 +27,15 @@ export default function Register() {
     setErr("");
     try {
       await register(username, password);
-      nav("/login");
+      //Send message along with redirect
+      nav("/login", {
+        state: {
+          flash: {
+            type: "success",
+            text: "Successfully registered! Please log in to continue.",
+          },
+        },
+      });
     } catch (e) {
       setErr(e.message || "Registration failed");
     }
