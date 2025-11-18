@@ -103,9 +103,9 @@ body {
 .topbar {
   position: sticky;
   top: 0;
-  left: 0;          /* NEW: pin to the left edge of the viewport */
-  right: 0;         /* NEW: pin to the right edge */
-  width: 100%;      /* NEW: actual page width, not viewport width */
+  left: 0;          
+  right: 0;      
+  width: 100%;    
   z-index: 1000;
 
   min-height: var(--topbar-h);
@@ -128,7 +128,7 @@ body {
 .topbar-inner {
   width: 100%;           /* full bar width */
   margin: 0;             /* no centering margins */
-  padding: 0 16px;       /* NEW: give breathing room on both sides */
+  padding: 0 16px;     
 
   display: grid;
   grid-template-columns: max-content 1fr max-content;
@@ -218,7 +218,7 @@ body {
 }
 
 .page {
-  max-width: none;   /* adjust: wider */
+  max-width: none;  
   width: 100vw;
   margin: 0;
   padding: 0;
@@ -510,7 +510,7 @@ body {
 .search {
   height: 40px;
   width: 100%;
-  max-width: 440px;  /* was unconstrained */
+  max-width: 440px; 
   flex: 0 0 440px;
   border: 1px solid var(--accent-300);
   border-radius: 18px;
@@ -743,12 +743,12 @@ body {
 
 /* ===== Severity pill in Post List ===== */
 .pill {
-  display: inline-flex;          /* lets us place "Severity:" + value side-by-side */
+  display: inline-flex;          
    align-items: center;
-   gap: 8px;                      /* space between label and value */
-   font-size: 13.5px;             /* bigger text */
+   gap: 8px;                      
+   font-size: 13.5px;             
    line-height: 1.15;
-   padding: 8px 10px;             /* larger pad but still compact */
+   padding: 8px 10px;            
    border-radius: 999px;
    border: 1px solid var(--line);
    background: var(--card);
@@ -783,7 +783,7 @@ body {
    letter-spacing: 0.2px;
  }
  .pill .pill-val {
-   text-transform: capitalize;    /* "low" -> "Low"; keeps backend text readable */
+   text-transform: capitalize; 
  }
 
 /*chip styles*/
@@ -1014,9 +1014,9 @@ body {
 }
 
 .flash-card--success {
-  border: 1px solid #bbf7d0;   /* light green */
-  background: #ecfdf3;         /* pale green */
-  color: #14532d;              /* dark green text */
+  border: 1px solid #bbf7d0;   
+  background: #ecfdf3;         
+  color: #14532d;              
 }
 
 /* Chip accessibility & motion prefs*/
@@ -1036,20 +1036,72 @@ body {
   }
 }
 
-.toast {
+/* stack container for multiple toasts */
+.toast-stack {
   position: fixed;
   left: 50%;
-  bottom: 16px;
+  bottom: 24px;
   transform: translateX(-50%);
-  background: #bdbdbd;
-  color: #000000;
-  padding: 10px 14px;
-  border-radius: 10px;
-  border: 1px solid rgba(0, 89, 255, 0.15);
-  box-shadow: 0 10px 22px rgba(0,0,0,0.25);
-  font: 13px/1.2 system-ui, Arial, sans-serif;
-  z-index: 10000;
-  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;                        
+  z-index: 1200;
+}
+
+/* base toast */
+.toast {
+  min-width: 320px;
+  max-width: 520px;
+  padding: 14px 20px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 17px;
+  line-height: 1.45;
+  font-weight: 600;
+  background: var(--card);
+}
+
+/* make sure the text grows nicely */
+.toast span:first-child {
+  flex: 1;
+}
+
+/* base colors (neutral/info) */
+.toast--info {
+  background: #e0f2fe;
+  border-color: #7fb5ff;
+  color: #082f49;
+}
+
+/* success (green) – flash-card--success */
+.toast--success {
+  background: #ecfdf3;
+  border-color: #bbf7d0;
+  color: #14532d;
+}
+
+/* error (red) – error-card */
+.toast--error {
+  background: #fff1f2;
+  border-color: #fecaca;
+  color: #7f1d1d;
+}
+
+/* close button */
+.toast-close {
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  padding: 0 6px;
+  color: inherit;
 }
 
 /*date range selector*/
@@ -1703,7 +1755,7 @@ body {
 }
 
 
-/* FOR DARK MODE */
+/* ==============FOR DARK MODE ======================*/
 .dark-theme {
   /* Dark palette via CSS variables */
   --bg: #0b1220;      /* page bg */
@@ -1800,6 +1852,19 @@ body {
   border-color: var(--accent-500) !important;
 }
 
+/* legend in dark */
+.dark-theme .legend-toggle {
+  background: rgba(21,28,46,0.78) !important;
+  border-color: var(--line) !important;
+  color: var(--text) !important;
+}
+
+.dark-theme .legend-toggle.active {
+  background: rgba(21,28,46,0.90) !important; 
+  border-color: var(--accent-500) !important;
+  color: var(--text) !important;
+}
+
 /* Dark theme variants for severity pills */
 .dark-theme .pill {
   background: rgba(15, 23, 42, 0.96); 
@@ -1832,6 +1897,42 @@ body {
   background: rgba(220, 38, 38, 0.22);  
   border-color: #dc2626;
   color: #fee2e2;
+}
+
+/* === Dark theme toast styling === */
+.dark-theme .toast {
+  border-color: rgba(148, 163, 184, 0.7);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.8);
+}
+
+/* info */
+.dark-theme .toast--info {
+  background: rgba(37, 99, 235, 0.25);
+  border-color: rgba(129, 140, 248, 0.8);
+  color: #e5edff;
+}
+
+/* success */
+.dark-theme .toast--success {
+  background: rgba(22, 163, 74, 0.22);
+  border-color: rgba(74, 222, 128, 0.9);
+  color: #dcfce7;
+}
+
+/* error */
+.dark-theme .toast--error {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(248, 113, 113, 0.9);
+  color: #fee2e2;
+}
+
+/* make the close button slightly softer in dark mode */
+.dark-theme .toast-close {
+  color: inherit;
+  opacity: 0.9;
+}
+.dark-theme .toast-close:hover {
+  opacity: 1;
 }
 
 /* Focus rings in dark */
