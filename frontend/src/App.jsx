@@ -6,6 +6,7 @@ import Topbar from './components/TopBar';
 import SummaryBar from './components/SummaryBar';
 import DateRangePicker from './components/DateRangePicker';
 import ResourcesPanel from './components/ResourcesPanel';
+import { useNotifications } from "./NotificationContext";
 import Analytics from './components/Analytics';
 import Cookies from 'js-cookie';
 import logoUrl from './assets/logo.png';
@@ -192,7 +193,7 @@ function normalizeApiResults(apiRows) {
       lat,
       lng: lon,
       url: "",
-      severityLevel,    // "low" | "moderate" | "severe" | "" (or raw text)
+      severityLevel,    // "low" | "moderate" | "severe" | "" 
       severityScore     // 0..1 or null
     });
   }
@@ -290,23 +291,19 @@ function Dashboard() {
   const [total, setTotal] = useState(0);
   const [error, setError] = useState(null);
 
-  const [missingPost, setMissingPost] = useState(null);
+  //new notifs function
+  const { notify } = useNotifications();
 
-  const [toast, setToast] = useState('');
-  const toastTimerRef = useRef(null);
-  const showToast = (msg, ms = 2400) => {
-    setToast(String(msg || ''));
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = setTimeout(() => {
-      setToast('');
-      toastTimerRef.current = null;
-    }, ms);
+  const handleMapMissingCoords = (post) => {
+    notify({
+      type: "error",
+      text: "That post has no coordinates. Not Shown on Map"
+    });
   };
-  useEffect(() => {
-    return () => {
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    };
-  }, []);
+
+  const handleMapHasCoords = () => {
+    // no-op for now; you can use this later if you want
+  };
 
   useEffect(() => {
   const preference = Cookies.get("dark_theme");
@@ -496,7 +493,10 @@ function Dashboard() {
   async function fetchResourcesNear({ lat, lng, postId, radiusMi = 10 }) {
     try {
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-        showToast('That post has no resource locations near.');
+        notify({
+          type: "info", // or "warning"
+          text: "That post has no resource locations near."
+        });
         return;
       }
       setResourcesOpen(true);
@@ -538,18 +538,19 @@ function Dashboard() {
 
   const handleSelectPost = (id) => {
     setSelectedPostId(id);
-    // if switching selection, clear any previous "missing coords" banner.
-    if (id !== (missingPost?.id ?? null)) setMissingPost(null);
   };
 
   const onShowResourcesFromPost = (post) => {
-    console.log('[onShowResourcesFromPost] post:', post);
-    if (!Number.isFinite(post.lat) || !Number.isFinite(post.lng)) {
-      showToast('That post has no coordinates.');
-      return;
-    }
-    fetchResourcesNear({ lat: post.lat, lng: post.lng, postId: post.id });
-  };
+  console.log('[onShowResourcesFromPost] post:', post);
+  if (!Number.isFinite(post.lat) || !Number.isFinite(post.lng)) {
+    notify({
+      type: "error",
+      text: "That post has no coordinates. No Resources Can be Shown"
+    });
+    return;
+  }
+  fetchResourcesNear({ lat: post.lat, lng: post.lng, postId: post.id });
+};
 
   if (loading) {
   return (
@@ -644,14 +645,8 @@ if (error) {
             <FilterBar
               types={allTypes}
               values={filters.types}
-              onToggle={(t) => {
-                toggleType(t);
-                if (missingPost) setMissingPost(null);
-              }}
-              onClearAll={() => {
-                clearAllTypes();
-                if (missingPost) setMissingPost(null);
-              }}
+              onToggle={toggleType}
+              onClearAll={clearAllTypes}
             />
           </div>
         </div>
@@ -695,12 +690,6 @@ if (error) {
 
             <div className="col-body">
               <div className="map-box">
-                {/* banner on map */}
-                {missingPost && selectedPostId === missingPost.id && (
-                  <div className="map-notice" role="status">
-                    No coordinates for this post.
-                  </div>
-                )}
 
                 {/* time chips on map */}
                 <div className="map-timechips" role="group" aria-label="Time window">
@@ -734,9 +723,9 @@ if (error) {
                   posts={filteredPosts}
                   selectedPostId={selectedPostId}
                   onSelectPost={setSelectedPostId}
+                  onMissingCoords={handleMapMissingCoords}
+                  onHasCoords={handleMapHasCoords}
                   enableLegendToggle={true}
-                  onMissingCoords={(post) => setMissingPost({ id: post.id, text: post.text || '' })}
-                  onHasCoords={() => { if (missingPost) setMissingPost(null); }}
                 />
               </div>
             </div>
@@ -755,8 +744,6 @@ if (error) {
           <img src={logoUrl} alt="BlueSky Crisis Intel logo" className="footer-logo" />
           <div className="footer-mark">Crisis &amp; Disaster Dashboard</div>
         </footer>
-
-        {toast && <div className="toast" role="status">{toast}</div>}
       </div>
       </div>
     </>
@@ -771,3 +758,4 @@ export default function App() {
     </>
   );
 }
+
