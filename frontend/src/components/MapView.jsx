@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { getTypeColor } from '../theme/typeColors';
+import { useNotifications } from '../NotificationContext';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.heat';
@@ -30,7 +31,7 @@ const INITIAL_VIEW = { center: [20, 0], zoom: 2 };
 // helpers
 const clamp01 = (x) => Math.max(0, Math.min(1, x));
 
-// Robust severity detectors/parsers (accept labels, numerics, alt fields)
+// detectors/parsers (accept labels, numerics, alt fields)
 const readSeverity = (p) => {
   const lvlRaw = (p?.severityLevel ?? p?.severity ?? p?.severity_label ?? '')
     .toString().trim().toLowerCase();
@@ -38,17 +39,17 @@ const readSeverity = (p) => {
 
   const missingTokens = ['none', 'unknown', 'no severity', 'no-severity', 'n/a', 'na', 'null'];
 
-  // If the label explicitly says "no data"/"unknown", ignore  score
+  // If the label explicitly says "no data"/"unknown", ignore
   if (lvlRaw && missingTokens.includes(lvlRaw)) {
     return null;
   }
 
-  // If there is no label at all and no score, treat as no severity.
+  // If there is no label at all and no score, no severity.
   if (!lvlRaw && scoreRaw === null) {
     return null;
   }
 
-  // Numeric score: must be finite and > 0 to count as "has severity"
+  // Numeric score: must be finite and > 0 = "has severity"
   if (scoreRaw !== null) {
     const num = Number(scoreRaw);
     if (Number.isFinite(num) && num > 0) return { kind: 'score', value: num };
@@ -83,8 +84,34 @@ export default function MapView({
   onMissingCoords,
   onHasCoords
 }) {
+
+  const { notify, remove } = useNotifications();
   const mapEl = useRef(null);
   const mapRef = useRef(null);
+
+  const severityHintIdRef = useRef(null);
+  const showSeverityHint = () => {
+    // If already one, kill first so never stack
+    if (severityHintIdRef.current != null) {
+      remove(severityHintIdRef.current);
+      severityHintIdRef.current = null;
+    }
+
+    const id = notify({
+      type: 'info',
+      text: 'To see Severity Better, zoom in on an area',
+      duration: 0, // stays until we manually remove
+    });
+
+    severityHintIdRef.current = id;
+  };
+  const clearSeverityHint = () => {
+    if (severityHintIdRef.current != null) {
+      remove(severityHintIdRef.current);
+      severityHintIdRef.current = null;
+    }
+  };
+
 
   // latest posts
   const postsRef = useRef(posts);
@@ -170,15 +197,15 @@ const severityGridSizeForZoom = () => SEVERITY_CELL_DEG;
   };
 
   const getSeverityColor = (severityWeight) => {
-    // Direct color mapping for circles
     if (severityWeight >= 0.8) return '#dc2626';      // severe → red
     if (severityWeight >= 0.5) return '#f97316';      // moderate → orange
     return '#22c55e';                                  // low → green
   };
 
-  // Get severity border color for markers (only when severity layer is visible)
+  // Get severity border color for markers
   const getSeverityBorderColor = (post) => {
-    if (!showSeverityRef.current) return null; // No border if severity not visible
+    if (!showSeverityRef.current) 
+      return null; // No border if severity not visible
     
     const sev = readSeverity(post);
     if (!sev) return null;
@@ -242,42 +269,63 @@ const severityGridSizeForZoom = () => SEVERITY_CELL_DEG;
   const bringLayerToFront = (layer) => { if (layer?.bringToFront) layer.bringToFront(); };
 
   // jump to previous/next post that shares this location
-  const openPostInGroup = (currentPostId, direction) => {
-    const map = mapRef.current;
-    if (!map) return;
+const openPostInGroup = (currentPostId, direction) => {
+  const map = mapRef.current;
+  if (!map) return;
 
-    const idxInfo = markerGroupIndexRef.current.get(currentPostId);
-    if (!idxInfo) return;
+  // always use string keys for the index
+  const idKey = String(currentPostId);
+  const idxInfo = markerGroupIndexRef.current.get(idKey);
 
-    const { groupKey, index, size } = idxInfo;
-    const group = markerGroupsRef.current.get(groupKey);
-    if (!group || !group.posts || group.posts.length === 0) return;
+  // helpful debug see this when you click arrows
+  console.log('openPostInGroup called:', { idKey, idxInfo });
 
-    const total = size || group.posts.length;
-    if (total <= 1) return;
+  if (!idxInfo) return;
 
-    let nextIndex = index + direction;
-    if (nextIndex < 0) nextIndex = total - 1;
-    if (nextIndex >= total) nextIndex = 0;
+  const { groupKey, index, size } = idxInfo;
+  const group = markerGroupsRef.current.get(groupKey);
+  if (!group || !group.posts || group.posts.length === 0) return;
 
-    const nextPost = group.posts[nextIndex];
-    if (!nextPost) return;
+  const total = size || group.posts.length;
+  if (total <= 1) return;
 
-    const mk = markerByIdRef.current.get(nextPost.id);
-    if (!mk) return;
+  let nextIndex = index + direction;
+  if (nextIndex < 0) nextIndex = total - 1;
+  if (nextIndex >= total) nextIndex = 0;
 
-    // update selection (PostList + marker styling)
-    onSelectPost?.(nextPost.id);
+  const nextPost = group.posts[nextIndex];
+  if (!nextPost) return;
 
-    // bring marker to front so it’s visible on top of the stack
-    if (mk.bringToFront) mk.bringToFront();
-    if (markersLayerRef.current) bringLayerToFront(markersLayerRef.current);
+  const mk = markerByIdRef.current.get(nextPost.id);
+  if (!mk) return;
 
-    // open popup for the new post
-    mk.openPopup();
-  };
+  // update selection (PostList + marker styling)
+  onSelectPost?.(nextPost.id);
 
-  // Density heatmap = bucket posts into grid cells, convert to posts/km, normalize.
+  // bring marker to front
+  if (mk.bringToFront) mk.bringToFront();
+  if (markersLayerRef.current) bringLayerToFront(markersLayerRef.current);
+
+  // open popup for the new post
+  mk.openPopup();
+
+  // update the popup nav label and current id
+  const popup = map._popup;
+  if (!popup) return;
+  const el = popup.getElement();
+  if (!el) return;
+
+  const nav = el.querySelector('.popup-nav');
+  if (!nav) return;
+
+  nav.setAttribute('data-post-id', String(nextPost.id));
+  const label = nav.querySelector('.popup-nav-label');
+  if (label) {
+    label.textContent = `${nextIndex + 1} / ${total}`;
+  }
+};
+
+// Density heatmap = bucket posts into grid cells, convert to posts/km², normalize.
   const buildDensityHeatData = (z) => {
     const cell = gridSizeForZoom(z);
     const roundTo = (v) => Math.round(v / cell) * cell;
@@ -308,8 +356,8 @@ const severityGridSizeForZoom = () => SEVERITY_CELL_DEG;
     // min/median/max for legend; normalize for heat weights
     const maxD = dens.reduce((m, x) => Math.max(m, x.d), 0) || 1;
     const minD = dens.reduce((m, x) => Math.min(m, x.d), maxD) || 0;
-    const sorted = dens.map(x => x.d).sort((a,b)=>a-b);
-    const mid = sorted.length ? sorted[Math.floor(sorted.length/2)] : 0;
+    const sorted = dens.map(x => x.d).sort((a, b) => a - b);
+    const mid = sorted.length ? sorted[Math.floor(sorted.length / 2)] : 0;
 
     const pts = dens.map(({ lat, lng, d }) => [lat, lng, clamp01(d / maxD)]);
 
@@ -336,7 +384,7 @@ const severityGridSizeForZoom = () => SEVERITY_CELL_DEG;
       const sev = readSeverity(p);
       if (!sev) continue;
 
-      // map severity → 0..1 weight
+      // map severity = 0..1 weight
       let w;
       if (sev.kind === 'score') {
         const v = Number(sev.value);
@@ -520,8 +568,6 @@ const severityGridSizeForZoom = () => SEVERITY_CELL_DEG;
       map.removeLayer(severityLayerRef.current);
     }
     
-    // When severity visibility changes, rebuild markers to update border colors
-   // rebuildMarkers(); not anymore
   };
 
   // ===== Update all layers
@@ -532,137 +578,122 @@ const severityGridSizeForZoom = () => SEVERITY_CELL_DEG;
   };
   
   // ===== Markers 
-  const rebuildMarkers = () => {
-    if (!mapRef.current) return;
+const rebuildMarkers = () => {
+  if (!mapRef.current) return;
 
-    //build groups of posts that share same location
-    const groups = new Map();
-    const groupIndex = new Map();
+  // build groups of posts that share same location
+  const groups = new Map();
+  const groupIndex = new Map();
 
-    for (const p of postsRef.current) {
-      const lat = p.lat ?? p.latitude;
-      const lng = p.lng ?? p.longitude;
-      if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
-      if (p.id == null) continue;
+  for (const p of postsRef.current) {
+    const lat = p.lat ?? p.latitude;
+    const lng = p.lng ?? p.longitude;
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+    if (p.id == null) continue;
 
-      const key = groupKeyFor(lat, lng);
-      let g = groups.get(key);
-      if (!g) {
-        g = { key, lat, lng, posts: [] };
-        groups.set(key, g);
-      }
-      g.posts.push(p);
+    const key = groupKeyFor(lat, lng);
+    let g = groups.get(key);
+    if (!g) {
+      g = { key, lat, lng, posts: [] };
+      groups.set(key, g);
     }
+    g.posts.push(p);
+  }
 
-    // Fill index lookup: postId -> { groupKey, index, size }
-    groups.forEach((g) => {
-      g.posts.forEach((p, idx) => {
-        groupIndex.set(p.id, {
-          groupKey: g.key,
-          index: idx,
-          size: g.posts.length,
-        });
+  // Fill index lookup: postId -> { groupKey, index, size }
+  groups.forEach((g) => {
+    g.posts.forEach((p, idx) => {
+      const idKey = String(p.id);
+      groupIndex.set(idKey, {
+        groupKey: g.key,
+        index: idx,
+        size: g.posts.length,
       });
     });
+  });
 
-    markerGroupsRef.current = groups;
-    markerGroupIndexRef.current = groupIndex;
+  markerGroupsRef.current = groups;
+  markerGroupIndexRef.current = groupIndex;
 
-    if (!markersLayerRef.current) {
-      markersLayerRef.current = L.layerGroup().addTo(mapRef.current);
-    } else {
-      markersLayerRef.current.clearLayers();
-    }
-    markerByIdRef.current.clear();
+  if (!markersLayerRef.current) {
+    markersLayerRef.current = L.layerGroup().addTo(mapRef.current);
+  } else {
+    markersLayerRef.current.clearLayers();
+  }
+  markerByIdRef.current.clear();
 
-    const z = mapRef.current.getZoom();
-    const r = markerRadiusForZoom(z);
+  const z = mapRef.current.getZoom();
+  const r = markerRadiusForZoom(z);
 
-    postsRef.current.forEach((p) => {
-      const lat = p.lat ?? p.latitude;
-      const lng = p.lng ?? p.longitude;
-      if (typeof lat !== 'number' || typeof lng !== 'number') return;
-      if (p.id == null) return;
+  postsRef.current.forEach((p) => {
+    const lat = p.lat ?? p.latitude;
+    const lng = p.lng ?? p.longitude;
+    if (typeof lat !== 'number' || typeof lng !== 'number') return;
+    if (p.id == null) return;
 
-      const sevHas = hasSeverity(p);
-      const sevLabel = sevHas ? String(p.severityLevel).trim() : '—';
+    const sevHas = hasSeverity(p);
+    const sevLabel = sevHas ? String(p.severityLevel).trim() : '—';
 
-      const idxInfo = markerGroupIndexRef.current.get(String(p.id));
-      const idx = idxInfo?.index ?? 0;
-      const size = idxInfo?.size ?? 1;
-      const hasGroupNav = size > 1;
+    const idKey = String(p.id);
+    const idxInfo = markerGroupIndexRef.current.get(idKey);
+    const idx = idxInfo?.index ?? 0;
+    const size = idxInfo?.size ?? 1;
+    const hasGroupNav = size > 1;
 
-      const popupHtml = `
-        <div style="max-width:260px;line-height:1.25">
-          <div style="font-weight:600;margin-bottom:4px">@${(p.username || 'unknown')}</div>
-          <div style="margin-bottom:6px">${(p.text || '').replace(/</g,'&lt;')}</div>
-          <div style="font-size:12px;opacity:.8">
-            ${(p.disasterType ? `Type: ${p.disasterType}` : 'Type: Other')}
-             · Severity: ${sevLabel}
-            <br/>
-            ${p.createdAt ? new Date(p.createdAt).toLocaleString() : ''}
-          </div>
-          ${
-            hasGroupNav
-              ? `
-              <div class="popup-nav" data-post-id="${p.id}">
-                <button type="button" class="popup-nav-btn" data-dir="-1" aria-label="Previous nearby report">↑</button>
-                <span class="popup-nav-label">${idx + 1} / ${size}</span>
-                <button type="button" class="popup-nav-btn" data-dir="1" aria-label="Next nearby report">↓</button>
-              </div>
-              `
-              : ''
-          }
+    const popupHtml = `
+      <div style="max-width:260px;line-height:1.25">
+        <div style="font-weight:600;margin-bottom:4px">@${(p.username || 'unknown')}</div>
+        <div style="margin-bottom:6px">${(p.text || '').replace(/</g,'&lt;')}</div>
+        <div style="font-size:12px;opacity:.8">
+          ${(p.disasterType ? `Type: ${p.disasterType}` : 'Type: Other')}
+          · Severity: ${sevLabel}
+          <br/>
+          ${p.createdAt ? new Date(p.createdAt).toLocaleString() : ''}
         </div>
-      `;
+        ${
+          hasGroupNav
+            ? `
+            <div class="popup-nav" data-post-id="${idKey}">
+              <button type="button" class="popup-nav-btn" data-dir="-1" aria-label="Previous nearby report">↑</button>
+              <span class="popup-nav-label">${idx + 1} / ${size}</span>
+              <button type="button" class="popup-nav-btn" data-dir="1" aria-label="Next nearby report">↓</button>
+            </div>
+            `
+            : ''
+        }
+      </div>
+    `;
 
-      const mk = L.circleMarker([lat, lng], {
+    const mk = L.circleMarker([lat, lng], {
         ...styleFor(p, p.disasterType, r),
         pane: 'markers',
         renderer: markersRendererRef.current,
-      })
-        .bindPopup(popupHtml, { autoPan: false, className: 'post-popup' })
-        .on('click', (e) => {
-          if (e.originalEvent) {
-            L.DomEvent.stop(e.originalEvent);
-          }
-          onSelectPost?.(p.id);
-          mk.openPopup();
-        })
-        //when popup opens, wire up the arrow buttons
-        .on('popupopen', (e) => {
-        const container = e.popup.getElement();
-        if (!container) return;
+    })
+      .bindPopup(popupHtml, { autoPan: false, className: 'post-popup' })
+      .on('click', (e) => {
+        if (e.originalEvent) {
+          L.DomEvent.stop(e.originalEvent);
+        }
+        onSelectPost?.(p.id);
+        mk.openPopup();
+      });
 
-        const nav = container.querySelector('.popup-nav');
-        if (!nav) return;
+    // stash the id on the marker so popup nav can use it
+    mk.postId = p.id;
 
-        const buttons = nav.querySelectorAll('.popup-nav-btn');
+    mk.addTo(markersLayerRef.current);
+    markerByIdRef.current.set(p.id, mk);
+  });
 
-        buttons.forEach((btn) => {
-          const dir = Number(btn.getAttribute('data-dir') || '0');
+  // highlight selected
+  if (selectedPostId != null) {
+    const sel = markerByIdRef.current.get(selectedPostId);
+    const p = postsRef.current.find((pp) => pp.id === selectedPostId);
+    if (sel && p) sel.setStyle(selectedStyleFor(p, p.disasterType, r));
+  }
 
-          L.DomEvent.on(btn, 'click', (ev) => {
-            L.DomEvent.stop(ev);
-            // always use THIS marker’s id as the current one
-            openPostInGroup(p.id, dir);
-          });
-        });
-      })
-
-      mk.addTo(markersLayerRef.current);
-      markerByIdRef.current.set(p.id, mk);
-    });
-
-    // highlight selected
-    if (selectedPostId != null) {
-      const sel = markerByIdRef.current.get(selectedPostId);
-      const p = postsRef.current.find((pp) => pp.id === selectedPostId);
-      if (sel && p) sel.setStyle(selectedStyleFor(p, p.disasterType, r));
-    }
-
-    bringLayerToFront(markersLayerRef.current);
-  };
+  bringLayerToFront(markersLayerRef.current);
+};
 
   // ===== Legend controls & Mode/Metric controls
   const legendControlRef = useRef(null);
@@ -710,27 +741,27 @@ const severityGridSizeForZoom = () => SEVERITY_CELL_DEG;
     mapRef.current = map;
 
     const resizeOnce = () => map.invalidateSize(false);
-if (document.readyState === 'complete') setTimeout(resizeOnce, 0);
-else window.addEventListener('load', resizeOnce, { once: true });
-const ro = new ResizeObserver(() => map.invalidateSize(false));
-ro.observe(mapEl.current);
+    if (document.readyState === 'complete') setTimeout(resizeOnce, 0);
+    else window.addEventListener('load', resizeOnce, { once: true });
+    const ro = new ResizeObserver(() => map.invalidateSize(false));
+    ro.observe(mapEl.current);
 
-// base tiles
-L.tileLayer(
-  'https://tiles.stadiamaps.com/tiles/outdoors/{z}/{x}/{y}{r}.{ext}',
-  {
-    minZoom: 0,
-    maxZoom: 20,
-    ext: 'png',
-    noWrap: false,
-    bounds: WORLD_BOUNDS,
-    keepBuffer: 3,
-    attribution:
-      '&copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> ' +
-      '&copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> ' +
-      '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
-  }
-).addTo(map);
+    // base tiles
+    L.tileLayer(
+      'https://tiles.stadiamaps.com/tiles/outdoors/{z}/{x}/{y}{r}.{ext}',
+      {
+        minZoom: 0,
+        maxZoom: 20,
+        ext: 'png',
+        noWrap: false,
+        bounds: WORLD_BOUNDS,
+        keepBuffer: 3,
+        attribution:
+          '&copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> ' +
+          '&copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> ' +
+          '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
+      }
+    ).addTo(map);
 
     // panes with z-index stacking
     map.createPane('density');   // bottom layer
@@ -848,15 +879,58 @@ L.tileLayer(
           btn.classList.toggle('active', showSeverityRef.current);
           updateSeverity();
           rebuildMarkers();
+          if (showSeverityRef.current) {
+            // turning severity ON → show (or refresh) the hint
+            showSeverityHint();
+          } else {
+            // turning severity OFF → hide the hint
+            clearSeverityHint();
+          }
         }
         
         updateLegendForMode();
       });
     });
 
+    // When any popup opens, wire up the ↑ / ↓ navigation buttons
+    map.on('popupopen', (e) => {
+      const container = e.popup.getElement();
+      if (!container) return;
+
+      const nav = container.querySelector('.popup-nav');
+      if (!nav) return;
+
+      // Get the "base" post id for this popup.
+      // Prefer the marker's postId that we stash in rebuildMarkers,
+      // and fall back to the data-post-id on the nav element.
+      const marker = e.popup._source;
+      const baseId =
+        (marker && marker.postId != null ? String(marker.postId) : null) ||
+        nav.getAttribute('data-post-id');
+
+      if (!baseId) return;
+
+      const buttons = nav.querySelectorAll('.popup-nav-btn');
+
+      buttons.forEach((btn) => {
+        const dir = Number(btn.getAttribute('data-dir') || '0');
+
+        L.DomEvent.on(btn, 'click', (ev) => {
+          L.DomEvent.stop(ev);
+          // Always start from the correct base id for this popup
+          openPostInGroup(baseId, dir);
+        });
+      });
+    });
+
     // Initial draws
     updateAllLayers();
     rebuildMarkers();
+
+    // If severity is initially visible, show hint once on load
+    if (showSeverityRef.current) {
+      showSeverityHint();
+    }
 
     // Update on zoom/move
     map.on('zoomend moveend', () => {
