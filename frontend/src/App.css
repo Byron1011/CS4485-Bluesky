@@ -966,6 +966,70 @@ body {
   color: var(--muted-2); 
 }
 
+/* Popup post cycling nav */
+.post-popup .popup-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.post-popup .popup-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 16px;
+  min-height: 32px;
+  min-width: 80px;
+  font-size: 13px;
+  line-height: 1;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.10);
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    transform 120ms ease;
+}
+
+.post-popup .popup-nav-btn:hover {
+  background: var(--accent-50);
+  border-color: var(--accent-300);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+  transform: translateY(-0.5px);
+}
+
+.post-popup .popup-nav-btn:focus-visible {
+  outline: 2px solid var(--accent-600);
+  outline-offset: 2px;
+}
+
+.post-popup .popup-nav-label {
+  font-size: 11px;
+  color: var(--muted-2);
+}
+
+/* Smooth transitions when severity circles change state */
+.leaflet-pane.severity path.severity-circle {
+  transition: fill-opacity 0.25s ease-out,
+              stroke-width 0.25s ease-out,
+              stroke-opacity 0.25s ease-out;
+}
+
+/* Ensure selected circles stay on top */
+.leaflet-pane.severity {
+  pointer-events: none; 
+}
+
+
 /* map bg */
 .leaflet-container {
   background: #a0c8ff;
@@ -1071,21 +1135,22 @@ body {
   flex: 1;
 }
 
-/* base colors (neutral/info) */
+/* base colors */
+/* info blue/gray */
 .toast--info {
   background: #e0f2fe;
   border-color: #7fb5ff;
   color: #082f49;
 }
 
-/* success (green) – flash-card--success */
+/* success (green)*/
 .toast--success {
   background: #ecfdf3;
   border-color: #bbf7d0;
   color: #14532d;
 }
 
-/* error (red) – error-card */
+/* error (red)  */
 .toast--error {
   background: #fff1f2;
   border-color: #fecaca;
@@ -1149,13 +1214,13 @@ body {
 
 /*resources panel*/
 .resources-panel {
-  margin: 8px 0 16px;
+  margin: 16px 0;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-radius: calc(var(--radius) + 4px);
   background: var(--card);
-  box-shadow: var(--shadow-sm);
-  padding: 10px 12px;
-  max-height: 260px;         
+  box-shadow: 0 20px 32px rgba(15, 23, 42, 0.15);
+  padding: 18px 20px;
+  max-height: 420px;
   overflow: auto;
 }
 
@@ -1163,61 +1228,102 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 14px;
 }
 
 .resources-title {
-  font-weight: 600;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text);
 }
 
 .resources-sub {
-  font-weight: 400;
+  font-size: 14px;
+  font-weight: 500;
   color: var(--muted-2);
-  font-size: 12px;
   margin-left: 6px;
+}
+
+.resources-head .chip {
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 18px;
+  font-weight: 700;
+  background: var(--accent-50);
+  border-color: var(--accent-300);
+}
+.resources-head .chip:hover {
+  background: var(--accent-100);
 }
 
 .resources-status,
 .resources-empty {
-  font-size: 14px;
+  font-size: 15px;
+  padding: 10px;
   color: var(--muted-2);
 }
 
 .resources-list {
   list-style: none;
   padding: 0;
-  margin: 0;
+  margin: 10px 0 0;
   display: grid;
-  gap: 8px;
+  gap: 14px;
+}
+
+.resources-item {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px 16px;
+  background: var(--card);
+  transition: 160ms ease;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.resources-item:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-300);
+  background: var(--accent-50);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
 }
 
 .ri-top {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  gap: 10px;
+  align-items: center;
 }
 
 .ri-name {
-  font-weight: 600;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text);
 }
 
 .ri-name a {
-  color: inherit;
   text-decoration: underline;
+  text-underline-offset: 3px;
+  color: var(--text);
 }
 
 .ri-distance {
-  font-size: 12px;
-  color: var(--muted-2);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--accent-100);
+  border: 1px solid var(--accent-300);
+  color: var(--accent-700);
 }
 
 .ri-meta {
-  font-size: 12px;
+  font-size: 14.5px;
   color: var(--muted-2);
+  line-height: 1.45;
 }
 
+/*chip stuff*/
 .chip-cta {
   height: 36px;
   padding: 0 16px;
@@ -1865,6 +1971,24 @@ body {
   color: var(--text) !important;
 }
 
+/* Resources panel */
+.dark-theme .resources-panel {
+  background: var(--card);
+  border-color: var(--line);
+  box-shadow: 0 24px 44px rgba(0, 0, 0, 0.7);
+}
+
+.dark-theme .resources-item:hover {
+  background: rgba(59, 130, 246, 0.18);
+  border-color: var(--accent-400);
+}
+
+.dark-theme .ri-distance {
+  background: rgba(37, 52, 84, 0.9);
+  border-color: var(--accent-400);
+  color: var(--text);
+}
+
 /* Dark theme variants for severity pills */
 .dark-theme .pill {
   background: rgba(15, 23, 42, 0.96); 
@@ -2037,6 +2161,23 @@ body {
   background: var(--card);
   color: var(--text);
   border-color: var(--line);
+}
+
+/* tweaks for popup nav */
+.dark-theme .post-popup .popup-nav {
+  border-top-color: var(--line);
+}
+
+.dark-theme .post-popup .popup-nav-btn {
+  background: var(--card);
+  border-color: var(--line);
+  color: var(--text); 
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.65);
+}
+
+.dark-theme .post-popup .popup-nav-btn:hover {
+  background: rgba(59, 130, 246, 0.22);
+  border-color: var(--accent-400);
 }
 
 
