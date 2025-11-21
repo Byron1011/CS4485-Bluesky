@@ -302,7 +302,6 @@ function Dashboard() {
   };
 
   const handleMapHasCoords = () => {
-    // no-op for now; you can use this later if you want
   };
 
   useEffect(() => {
@@ -489,6 +488,26 @@ function Dashboard() {
       setResourcesError(null);
       setResourcesLoading(false);
   }, [selectedPostId]);
+
+  useEffect(() => {
+    if (!resourcesOpen) return;
+
+    // Wait for the panel to actually be in the DOM
+    const id = window.requestAnimationFrame(() => {
+      const panel = document.querySelector('.resources-panel');
+      if (!panel) return;
+
+      const rect = panel.getBoundingClientRect();
+      const targetY = window.scrollY + rect.top - 80;
+
+      window.scrollTo({
+        top: targetY,
+        behavior: 'smooth',
+      });
+    });
+
+    return () => window.cancelAnimationFrame(id);
+  }, [resourcesOpen]);
 
   async function fetchResourcesNear({ lat, lng, postId, radiusMi = 10 }) {
     try {
