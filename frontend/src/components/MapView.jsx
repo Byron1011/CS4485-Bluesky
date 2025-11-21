@@ -143,6 +143,8 @@ export default function MapView({
 
   const heatRef = useRef(null); // For density heatmap
   const severityLayerRef = useRef(null); 
+  const severitySelectedLayerRef = useRef(null); // Selected severity circle (always on top)
+  const severityCircleByIdRef = useRef(new Map()); // Track severity circles by post ID
   const heatConfRef = useRef({ radius: 0, blur: 0, minOpacity: 0.0 });
   const heatStatsRef = useRef({ min: 0, q50: 0, max: 0 }); // for density legend
 
@@ -369,12 +371,24 @@ const openPostInGroup = (currentPostId, direction) => {
     const map = mapRef.current;
     if (!map) return;
 
-    // Clear existing severity layer
+    // Clear existing severity layers
     if (severityLayerRef.current) {
       severityLayerRef.current.clearLayers();
     } else {
       severityLayerRef.current = L.layerGroup({ pane: 'severity' });
     }
+    
+    if (severitySelectedLayerRef.current) {
+      severitySelectedLayerRef.current.clearLayers();
+    } else {
+      severitySelectedLayerRef.current = L.layerGroup({ pane: 'severitySelected' });
+    }
+    
+    // Clear the circle tracking map
+    severityCircleByIdRef.current.clear();
+    
+    // Get the current selected post ID
+    const currentSelectedId = selectedPostIdRef.current;
 
     for (const p of postsRef.current) {
       const lat = p.lat ?? p.latitude;
@@ -403,19 +417,35 @@ const openPostInGroup = (currentPostId, direction) => {
       const radiusKm = getSeverityRadiusKm(w);
       const radiusMeters = radiusKm * 1000;
       const color = getSeverityColor(w);
+      
+      // Check if this post is currently selected
+      const isSelected = p.id === currentSelectedId;
 
       const circle = L.circle([lat, lng], {
         radius: radiusMeters,
         fillColor: color,
-        fillOpacity: 0.2,  
+        fillOpacity: isSelected ? 0.35 : 0.2,  // Glow when selected
         color: color,       
-        weight: 1.2,      
-        opacity: 0.5,      
-        pane: 'severity',
-        interactive: false  
+        weight: isSelected ? 2.5 : 1.2,        
+        opacity: isSelected ? 0.8 : 0.5,     
+        pane: isSelected ? 'severitySelected' : 'severity',  
+        interactive: false,
+        className: 'severity-circle'          
       });
 
-      circle.addTo(severityLayerRef.current);
+      // Add to correct layer based on selection
+      circle.addTo(isSelected ? severitySelectedLayerRef.current : severityLayerRef.current);
+      
+      // Store reference to this circle by post ID
+      severityCircleByIdRef.current.set(p.id, { 
+        circle, 
+        color, 
+        radiusMeters, 
+        weight: w,
+        postId: p.id,
+        lat,
+        lng
+      });
     }
   };
   
@@ -561,11 +591,18 @@ const openPostInGroup = (currentPostId, direction) => {
 
     buildSeverityCircles();
 
-    // Add to map if should be visible
+    // Add/remove normal severity layer
     if (showSeverityRef.current && severityLayerRef.current && !map.hasLayer(severityLayerRef.current)) {
       severityLayerRef.current.addTo(map);
     } else if (!showSeverityRef.current && severityLayerRef.current && map.hasLayer(severityLayerRef.current)) {
       map.removeLayer(severityLayerRef.current);
+    }
+    
+    // Add/remove selected severity layer
+    if (showSeverityRef.current && severitySelectedLayerRef.current && !map.hasLayer(severitySelectedLayerRef.current)) {
+      severitySelectedLayerRef.current.addTo(map);
+    } else if (!showSeverityRef.current && severitySelectedLayerRef.current && map.hasLayer(severitySelectedLayerRef.current)) {
+      map.removeLayer(severitySelectedLayerRef.current);
     }
     
   };
@@ -650,17 +687,16 @@ const rebuildMarkers = () => {
           <br/>
           ${p.createdAt ? new Date(p.createdAt).toLocaleString() : ''}
         </div>
-        ${
-          hasGroupNav
+        ${hasGroupNav
             ? `
-            <div class="popup-nav" data-post-id="${idKey}">
-              <button type="button" class="popup-nav-btn" data-dir="-1" aria-label="Previous nearby report">↑</button>
-              <span class="popup-nav-label">${idx + 1} / ${size}</span>
-              <button type="button" class="popup-nav-btn" data-dir="1" aria-label="Next nearby report">↓</button>
-            </div>
-            `
+              <div class="popup-nav" data-post-id="${idKey}">
+                <button type="button" class="popup-nav-btn" data-dir="-1" aria-label="Previous nearby report">‹ Prev</button>
+                <span class="popup-nav-label">${idx + 1} / ${size}</span>
+                <button type="button" class="popup-nav-btn" data-dir="1" aria-label="Next nearby report">Next ›</button>
+              </div>
+              `
             : ''
-        }
+          }
       </div>
     `;
 
@@ -669,13 +705,14 @@ const rebuildMarkers = () => {
         pane: 'markers',
         renderer: markersRendererRef.current,
     })
-      .bindPopup(popupHtml, { autoPan: false, className: 'post-popup' })
+      // Attach the popup
+    .bindPopup(popupHtml, { autoPan: false, className: 'post-popup' })
       .on('click', (e) => {
         if (e.originalEvent) {
           L.DomEvent.stop(e.originalEvent);
         }
+        // just update selection
         onSelectPost?.(p.id);
-        mk.openPopup();
       });
 
     // stash the id on the marker so popup nav can use it
@@ -764,13 +801,22 @@ const rebuildMarkers = () => {
     ).addTo(map);
 
     // panes with z-index stacking
-    map.createPane('density');   // bottom layer
-    map.createPane('severity');  // middle layer
-    map.createPane('markers');   // top layer
+    map.createPane('density');          // bottom layer
+    map.createPane('severity');         // normal severity circles
+    map.createPane('severitySelected'); // selected severity circle (above normal)
+    map.createPane('markers');          // top layer
     
-    const densityPane = map.getPane('density');   if (densityPane)  densityPane.style.zIndex = 200;
-    const severityPane = map.getPane('severity'); if (severityPane) severityPane.style.zIndex = 300;
-    const markPane = map.getPane('markers');      if (markPane)     markPane.style.zIndex = 600;
+    const densityPane = map.getPane('density');   
+    if (densityPane)  densityPane.style.zIndex = 200;
+    
+    const severityPane = map.getPane('severity'); 
+    if (severityPane) severityPane.style.zIndex = 300;
+    
+    const severitySelectedPane = map.getPane('severitySelected');
+    if (severitySelectedPane) severitySelectedPane.style.zIndex = 400; // Above normal severity
+    
+    const markPane = map.getPane('markers');      
+    if (markPane)     markPane.style.zIndex = 600;
 
     // renderer for markers
     markersRendererRef.current = L.canvas({ padding: 0.5, pane: 'markers' });
@@ -836,7 +882,7 @@ const rebuildMarkers = () => {
     legendToggle.addTo(map);
     legendToggleControlRef.current = legendToggle;
 
-    // Layer toggles (center) - three independent checkboxes
+    // Layer toggles
     const togglesEl = L.DomUtil.create('div', 'map-modes map-modes--center', map.getContainer());
     togglesEl.innerHTML = `
       <div role="group" aria-label="Map layers" class="map-modes-inner">
@@ -880,10 +926,10 @@ const rebuildMarkers = () => {
           updateSeverity();
           rebuildMarkers();
           if (showSeverityRef.current) {
-            // turning severity ON → show (or refresh) the hint
+            // turning severity ON 
             showSeverityHint();
           } else {
-            // turning severity OFF → hide the hint
+            // turning severity OFF 
             clearSeverityHint();
           }
         }
@@ -892,7 +938,7 @@ const rebuildMarkers = () => {
       });
     });
 
-    // When any popup opens, wire up the ↑ / ↓ navigation buttons
+    // When any popup opens, wire up 
     map.on('popupopen', (e) => {
       const container = e.popup.getElement();
       if (!container) return;
@@ -900,24 +946,35 @@ const rebuildMarkers = () => {
       const nav = container.querySelector('.popup-nav');
       if (!nav) return;
 
-      // Get the "base" post id for this popup.
-      // Prefer the marker's postId that we stash in rebuildMarkers,
-      // and fall back to the data-post-id on the nav element.
       const marker = e.popup._source;
       const baseId =
         (marker && marker.postId != null ? String(marker.postId) : null) ||
         nav.getAttribute('data-post-id');
 
-      if (!baseId) return;
+      if (!baseId) {
+        console.warn('[MapView] popupopen: No baseId found', { marker, nav });
+        return;
+      }
+
+      // Verify this post exists in our grouping index
+      const idxInfo = markerGroupIndexRef.current.get(String(baseId));
+      if (!idxInfo) {
+        console.warn('[MapView] popupopen: Post not in groupIndex', { baseId });
+        return;
+      }
 
       const buttons = nav.querySelectorAll('.popup-nav-btn');
 
       buttons.forEach((btn) => {
         const dir = Number(btn.getAttribute('data-dir') || '0');
 
+        // Remove any existing listeners to prevent duplicates
+        L.DomEvent.off(btn, 'click');
+        
         L.DomEvent.on(btn, 'click', (ev) => {
           L.DomEvent.stop(ev);
           // Always start from the correct base id for this popup
+          console.log('[MapView] Nav button clicked:', { baseId, dir });
           openPostInGroup(baseId, dir);
         });
       });
@@ -965,6 +1022,8 @@ const rebuildMarkers = () => {
     if (!mapRef.current) return;
     const z = mapRef.current.getZoom();
     const r = markerRadiusForZoom(z);
+    
+    // Update marker styles
     markerByIdRef.current.forEach((mk, id) => {
       const p = postsRef.current.find(pp => pp.id === id);
       if (!p) return;
@@ -974,6 +1033,43 @@ const rebuildMarkers = () => {
         : styleFor(p, p.disasterType, r)
       );
     });
+    
+    // Update severity circle styles
+    if (severityCircleByIdRef.current.size > 0) {
+      severityCircleByIdRef.current.forEach((circleData, id) => {
+        const { circle } = circleData;
+        if (!circle || !circle.setStyle) return; // Safety check
+        
+        const isSelected = id === selectedPostId;
+        
+        try {
+          // Remove from current layer first
+          if (severityLayerRef.current && severityLayerRef.current.hasLayer(circle)) {
+            severityLayerRef.current.removeLayer(circle);
+          }
+          if (severitySelectedLayerRef.current && severitySelectedLayerRef.current.hasLayer(circle)) {
+            severitySelectedLayerRef.current.removeLayer(circle);
+          }
+          
+          // Update styles
+          circle.setStyle({
+            fillOpacity: isSelected ? 0.35 : 0.2,  
+            weight: isSelected ? 2.5 : 1.2,        
+            opacity: isSelected ? 0.8 : 0.5,      
+          });
+          
+          // Add to appropriate layer 
+          if (isSelected) {
+            circle.addTo(severitySelectedLayerRef.current);
+          } else {
+            circle.addTo(severityLayerRef.current);
+          }
+          
+        } catch (err) {
+          console.warn('[MapView] Error updating severity circle style:', err);
+        }
+      });
+    }
   }, [selectedPostId]);
 
   // Zoom to selected & open popup
@@ -981,12 +1077,13 @@ const rebuildMarkers = () => {
     const map = mapRef.current;
     if (!map) return;
 
+    // No selection 
     if (selectedPostId == null) {
       map.closePopup();
       return;
     }
 
-    const p = (postsRef.current || []).find(pp => pp.id === selectedPostId);
+    const p = (postsRef.current || []).find((pp) => pp.id === selectedPostId);
     if (!p) return;
 
     const lat = p.lat ?? p.latitude;
@@ -1007,10 +1104,26 @@ const rebuildMarkers = () => {
     const targetLatLng = L.latLng(lat, lng);
 
     if (!alreadyOpen) {
-      map.flyTo(targetLatLng, targetZoom, { animate: true, duration: 0.6 });
-      setTimeout(() => mk.openPopup(), 420);
+      map.once('moveend', () => {
+        // Make sure the same post is  selected and the marker  exists
+        if (
+          markerByIdRef.current.has(selectedPostId) &&
+          mk &&
+          mk.openPopup
+        ) {
+          mk.openPopup();
+        }
+      });
+
+      map.flyTo(targetLatLng, targetZoom, {
+        animate: true,
+        duration: 0.6,
+      });
     } else {
-      map.flyTo(targetLatLng, targetZoom, { animate: true, duration: 0.6 });
+      map.flyTo(targetLatLng, targetZoom, {
+        animate: true,
+        duration: 0.6,
+      });
     }
   }, [selectedPostId]);
 
