@@ -9,16 +9,23 @@ import Resource from "./resource_schema.js";
 import { Server } from "socket.io";
 import http from "http";
 
-
-
-
-
 // For use of cookies
 import cookieParser from 'cookie-parser';
 import User from "./user_schema.js";
 
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+
+// For updated analytics caching
+import getAnalyticsCache from "./CacheUtils/getCache.js";
+import updateAnalytics from "./CacheUtils/updateAnalytics.js";
+
+// Run on startup
+updateAnalytics();
+
+// Refresh every 5 minutes
+setInterval(updateAnalytics, 5 * 60 * 1000);
+
 
 const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY;
 
@@ -609,6 +616,13 @@ app.get('/posts', async (req, res) => {
 });
 
 // Top 5 disaster types by post count
+app.get("/analytics/top-types", async (req, res) => {
+  const data = await getAnalyticsCache("top-types");
+  res.json(data || []);
+});
+
+
+/*
 app.get('/analytics/top-types', async (req, res) => {
   try {
     const results = await Post.aggregate([
@@ -628,7 +642,15 @@ app.get('/analytics/top-types', async (req, res) => {
     res.status(500).json({ error: "server_error" });
   }
 });
+*/
 
+// Total posts over time
+app.get("/analytics/total-posts", async (req, res) => {
+  const data = await getAnalyticsCache("total-posts");
+  res.json(data || { total: 0 });
+});
+
+/*
 app.get("/analytics/total-posts", async (req, res) => {
   try {
     const count = await Post.countDocuments();
@@ -638,7 +660,15 @@ app.get("/analytics/total-posts", async (req, res) => {
     res.status(500).json({ error: "server_error" });
   }
 });
+*/
 
+// Posts over time
+app.get("/analytics/posts-over-time", async (req, res) => {
+  const data = await getAnalyticsCache("posts-over-time");
+  res.json(data || []);
+});
+
+/*
 app.get("/analytics/posts-over-time", async (req, res) => {
   try {
     const results = await Post.aggregate([
@@ -659,80 +689,16 @@ app.get("/analytics/posts-over-time", async (req, res) => {
     res.status(500).json({ error: "server_error" });
   }
 });
-
-app.post("/register", async (req, res) => {
-  try {
-
-    console.log(req.body)
-    const { username, password, role } = req.body;
-
-    const passwordHash = await bcrypt.hash(password, 10);
-    const user = new User({ username, passwordHash, role });
-    await user.save();
-
-    console.log(user);
-
-    res.status(201).json({ message: "User registered successfully" });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-// Login
-app.post("/login", async (req, res) => {
-  try {
-    const { username, password } = req.body;
-
-    console.log(req.body);
-
-    const user = await User.findOne({ username: username });
-
-
-    if (!user) return res.status(404).json({ error: "User not found" });
-
-    const valid = await bcrypt.compare(password, user.passwordHash);
-    if (!valid) return res.status(401).json({ error: "Invalid password" });
-
-    const token = generateSignedToken(user);
-
-    res.cookie("token", token, {
-      httpOnly: true,      // JS can't access it
-      secure: false,       // true if using https
-      sameSite: "strict",  // prevents CSRF
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    });
-
-
-
-    res.json({ token });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.get("/logout", (req, res) => {
-  res.clearCookie("token", {
-    httpOnly: true,
-    secure: false,
-    sameSite: "lax",
-  });
-
-  console.log("got here");
-  res.send("Logged out successfully");
-});
-
-// route that required user to be logged in
-app.get("/protected", isLoggedIn, async(req, res, next) => {
-    console.log("All roads lead to Rome");
-    res.send("Made it to the secret!");
-})
-
-// route that requires ADMIN level access
-app.get("/sensitive", isAdmin, async(req, res, next) => {
-
-});
+*/
 
 // Countries with most disasters (by posts)
+app.get("/analytics/top-countries-over-time", async (req, res) => {
+  const data = await getAnalyticsCache("top-countries-over-time");
+  res.json(data || []);
+});
+
+
+/*
 app.get('/analytics/top-countries-over-time', async (req, res) => {
   try {
     const limit = Math.max(1, Math.min(Number(req.query.limit) || 5, 12));
@@ -848,9 +814,15 @@ app.get('/analytics/top-countries-over-time', async (req, res) => {
     res.status(500).json({ error: "server_error" });
   }
 });
-
+*/
 
 // Types over time (date × disasterType) for stacked area chart
+app.get("/analytics/types-over-time", async (req, res) => {
+  const data = await getAnalyticsCache("types-over-time");
+  res.json(data || []);
+});
+
+/*
 app.get('/analytics/types-over-time', async (req, res) => {
   try {
     const results = await Post.aggregate([
@@ -870,6 +842,79 @@ app.get('/analytics/types-over-time', async (req, res) => {
     console.error(err);
     res.status(500).json({ error: "server_error" });
   }
+});
+*/
+
+app.post("/register", async (req, res) => {
+  try {
+
+    console.log(req.body)
+    const { username, password, role } = req.body;
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const user = new User({ username, passwordHash, role });
+    await user.save();
+
+    console.log(user);
+
+    res.status(201).json({ message: "User registered successfully" });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Login
+app.post("/login", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    console.log(req.body);
+
+    const user = await User.findOne({ username: username });
+
+
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const valid = await bcrypt.compare(password, user.passwordHash);
+    if (!valid) return res.status(401).json({ error: "Invalid password" });
+
+    const token = generateSignedToken(user);
+
+    res.cookie("token", token, {
+      httpOnly: true,      // JS can't access it
+      secure: false,       // true if using https
+      sameSite: "strict",  // prevents CSRF
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    });
+
+
+
+    res.json({ token });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/logout", (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: false,
+    sameSite: "lax",
+  });
+
+  console.log("got here");
+  res.send("Logged out successfully");
+});
+
+// route that required user to be logged in
+app.get("/protected", isLoggedIn, async(req, res, next) => {
+    console.log("All roads lead to Rome");
+    res.send("Made it to the secret!");
+})
+
+// route that requires ADMIN level access
+app.get("/sensitive", isAdmin, async(req, res, next) => {
+
 });
 
 app.get("/me", async (req, res) => {

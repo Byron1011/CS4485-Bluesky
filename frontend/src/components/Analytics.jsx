@@ -221,7 +221,7 @@ function TopCountriesOverTimeLine({ limit = 5, days = 30, onZoom, isFocused }) {
     const [rows, setRows] = useState([]);
     
     useEffect(() => {
-        fetch(`/analytics/top-countries-over-time?limit=${limit}&days=${days}`)
+        fetch(`/analytics/top-countries-over-time`)
         .then(r => {
             if (!r.ok) throw new Error(`HTTP ${r.status}`);
                 return r.json();
@@ -314,10 +314,13 @@ function TypesOverTimeStacked({ topK = 5, onZoom, isFocused }) {
     const remappedTall = rows.map(r => {
         const t = canon(r.type || "other");
         const mappedType = chosen.includes(t) ? t : "other";
-        return { bucket: r.bucket, type: mappedType, count: Number(r.count || 0) };
+        return { bucket: r.bucket ?? undefined, type: mappedType, count: Number(r.count || 0) };
     });
 
-    const dates = remappedTall.map(r => new Date(r.bucket));
+    const dates = remappedTall
+        .filter(r => r.bucket)   // remove null / empty bucket values
+        .map(r => new Date(r.bucket));
+
     const min = new Date(Math.min(...dates));
     const max = new Date(Math.max(...dates));
     const buckets = dayRangeInclusive(min, max);
