@@ -127,14 +127,14 @@ function pivotTallToWide(rows, bucketKey, categoryKey, valueKey, orderedBuckets,
 }
 
 /*Chart 1: Top Types (bar) */
-function TopTypesBar({ onZoom, isFocused }) {
+function TopTypesBar({ limit = 5, days = 30, onZoom, isFocused }) {
     const [rows, setRows] = useState([]);
     useEffect(() => {
-        fetch("/analytics/top-types")
+        fetch(`/analytics/top-types?limit=${limit}&days=${days}`)
         .then(r => r.json())
         .then(setRows)
         .catch(console.error);
-    }, []);
+    }, [limit , days]);
 
     const data = useMemo(
         () => rows.map(r => ({ type: (r?._id ?? "unknown").replace(/^./, c => c.toUpperCase()), count: Number(r?.count ?? 0) })),
@@ -169,14 +169,14 @@ function TopTypesBar({ onZoom, isFocused }) {
 }
 
 /* Chart 2: Posts Over Time (line)*/
-function PostsOverTime({ onZoom, isFocused }) {
+function PostsOverTime({ days = 30, onZoom, isFocused }) {
     const [rows, setRows] = useState([]);
     useEffect(() => {
-        fetch("/analytics/posts-over-time")
+        fetch(`/analytics/posts-over-time?days=${days}`)
             .then(res => res.json())
             .then(setRows)
             .catch(console.error);
-    }, []);
+    }, [days]);
 
     const data = useMemo(
         () => (rows || []).map(d => ({
@@ -221,7 +221,7 @@ function TopCountriesOverTimeLine({ limit = 5, days = 30, onZoom, isFocused }) {
     const [rows, setRows] = useState([]);
     
     useEffect(() => {
-        fetch(`/analytics/top-countries-over-time`)
+        fetch(`/analytics/top-countries-over-time?limit=${limit}&days=${days}`)
         .then(r => {
             if (!r.ok) throw new Error(`HTTP ${r.status}`);
                 return r.json();
@@ -282,18 +282,18 @@ function TopCountriesOverTimeLine({ limit = 5, days = 30, onZoom, isFocused }) {
 }
 
 /* Chart 4: Types Over Time (stacked area) */
-function TypesOverTimeStacked({ topK = 5, onZoom, isFocused }) {
+function TypesOverTimeStacked({ topK = 5, days = 30, onZoom, isFocused }) {
     const [rows, setRows] = useState([]);
 
     useEffect(() => {
-        fetch(`/analytics/types-over-time`)
+        fetch(`/analytics/types-over-time?days=${days}`)
         .then(r => {
             if (!r.ok) throw new Error(`HTTP ${r.status}`);
             return r.json();
         })
         .then(data => setRows(Array.isArray(data) ? data : []))
         .catch(console.error);
-    }, []);
+    }, [days]);
 
     const { data, keys } = useMemo(() => {
         if (!rows.length) return { data: [], keys: [] };
@@ -383,6 +383,10 @@ function TypesOverTimeStacked({ topK = 5, onZoom, isFocused }) {
 /* Page*/
 export default function Analytics() {
     useEnsureTheme();
+
+    const [days, setDays] = useState(30);   // default range = 30 days
+    const [limit, setLimit] = useState(5);  // default limit = 5
+
     
     const [focusKey, setFocusKey] = useState(null);
     useEffect(() => {
@@ -412,43 +416,80 @@ export default function Analytics() {
           </span>{" "}
           Total Posts
         </p>
+
+        <div style={{ marginTop: 12, display: "flex", gap: 12 }}>
+            <label>
+                Days:{" "}
+                <input
+                type="number"
+                min="1"
+                max="365"
+                value={days}
+                onChange={e => setDays(Number(e.target.value))}
+                style={{ width: 80 }}
+                />
+            </label>
+
+            <label>
+                Limit:{" "}
+                <input
+                type="number"
+                min="1"
+                max="50"
+                value={limit}
+                onChange={e => setLimit(Number(e.target.value))}
+                style={{ width: 80 }}
+                />
+            </label>
+        </div>
       </section>
 
       {/* Either 2×2 grid or single chart */}
       {!focusKey ? (
         <ChartGrid>
-          <TopTypesBar
+            <TopTypesBar
+            days={days}
+            limit={limit}
             onZoom={() => setFocusKey('top-types')}
             isFocused={false}
-          />
-          <PostsOverTime
+            />
+
+            <PostsOverTime
+            days={days}
             onZoom={() => setFocusKey('posts-over-time')}
             isFocused={false}
-          />
-          <TopCountriesOverTimeLine
-            limit={5}
+            />
+
+            <TopCountriesOverTimeLine
+            days={days}
+            limit={limit}
             onZoom={() => setFocusKey('top-countries')}
             isFocused={false}
-          />
-          <TypesOverTimeStacked
-            topK={5}
+            />
+
+            <TypesOverTimeStacked
+            days={days}
+            topK={limit}
             onZoom={() => setFocusKey('types-stacked')}
             isFocused={false}
-          />
+            />
         </ChartGrid>
       ) : (
         <div>
             {focusKey === 'top-types' && (
-              <TopTypesBar onZoom={() => setFocusKey(null)} isFocused />
+            <TopTypesBar days={days} limit={limit} onZoom={() => setFocusKey(null)} isFocused />
             )}
+
             {focusKey === 'posts-over-time' && (
-              <PostsOverTime onZoom={() => setFocusKey(null)} isFocused />
+            <PostsOverTime days={days} onZoom={() => setFocusKey(null)} isFocused />
             )}
+
             {focusKey === 'top-countries' && (
-              <TopCountriesOverTimeLine limit={5} onZoom={() => setFocusKey(null)} isFocused />
+            <TopCountriesOverTimeLine days={days} limit={limit} onZoom={() => setFocusKey(null)} isFocused />
             )}
+
             {focusKey === 'types-stacked' && (
-              <TypesOverTimeStacked topK={5} onZoom={() => setFocusKey(null)} isFocused />
+            <TypesOverTimeStacked days={days} topK={limit} onZoom={() => setFocusKey(null)} isFocused />
             )}
           </div>
       )}

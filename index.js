@@ -16,16 +16,6 @@ import User from "./user_schema.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 
-// For updated analytics caching
-import getAnalyticsCache from "./CacheUtils/getCache.js";
-import updateAnalytics from "./CacheUtils/updateAnalytics.js";
-
-// Run on startup
-updateAnalytics();
-
-// Refresh every 5 minutes
-setInterval(updateAnalytics, 5 * 60 * 1000);
-
 
 const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY;
 
@@ -615,17 +605,43 @@ app.get('/posts', async (req, res) => {
   }
 });
 
-// Top 5 disaster types by post count
-app.get("/analytics/top-types", async (req, res) => {
-  const data = await getAnalyticsCache("top-types");
-  res.json(data || []);
+// For Analytics
+function buildMatchQuery(days) {
+  if (!days) return {};
+
+  const cutoff = new Date();
+  cutoff.setUTCDate(cutoff.getUTCDate() - Number(days));
+  return { createdAt: { $gte: cutoff } };
+}
+
+function parseLimit(queryLimit, defaultValue = 5, max = 50) {
+  const n = Number(queryLimit);
+  if (!n || n < 1) return defaultValue;
+  return Math.min(n, max);
+}
+
+// Total posts over time
+
+app.get("/analytics/total-posts", async (req, res) => {
+  try {
+    const match = buildMatchQuery(req.query.days);
+    const count = await Post.countDocuments(match);
+    res.json({ total: count });
+  } catch (err) {
+    console.error("Error fetching total posts:", err);
+    res.status(500).json({ error: "server_error" });
+  }
 });
 
-
-/*
+// For Chart 1
+// Top 5 disaster types by post count
 app.get('/analytics/top-types', async (req, res) => {
   try {
+    const match = buildMatchQuery(req.query.days);
+    const limit = parseLimit(req.query.limit, 5);
+
     const results = await Post.aggregate([
+      { $match: match },
       {
         $group: {
           _id: "$labels.disasterType",
@@ -633,7 +649,7 @@ app.get('/analytics/top-types', async (req, res) => {
         }
       },
       { $sort: { count: -1 } },
-      { $limit: 5 }
+      { $limit: limit }
     ]);
 
     res.json(results);
@@ -642,36 +658,15 @@ app.get('/analytics/top-types', async (req, res) => {
     res.status(500).json({ error: "server_error" });
   }
 });
-*/
 
-// Total posts over time
-app.get("/analytics/total-posts", async (req, res) => {
-  const data = await getAnalyticsCache("total-posts");
-  res.json(data || { total: 0 });
-});
-
-/*
-app.get("/analytics/total-posts", async (req, res) => {
-  try {
-    const count = await Post.countDocuments();
-    res.json({ total: count });
-  } catch (err) {
-    console.error("Error fetching total posts:", err);
-    res.status(500).json({ error: "server_error" });
-  }
-});
-*/
-
+// For Chart 2
 // Posts over time
 app.get("/analytics/posts-over-time", async (req, res) => {
-  const data = await getAnalyticsCache("posts-over-time");
-  res.json(data || []);
-});
-
-/*
-app.get("/analytics/posts-over-time", async (req, res) => {
   try {
+    const match = buildMatchQuery(req.query.days);
+
     const results = await Post.aggregate([
+      { $match: match },
       {
         $group: {
           _id: {
@@ -689,16 +684,10 @@ app.get("/analytics/posts-over-time", async (req, res) => {
     res.status(500).json({ error: "server_error" });
   }
 });
-*/
 
+// For Chart 3
 // Countries with most disasters (by posts)
-app.get("/analytics/top-countries-over-time", async (req, res) => {
-  const data = await getAnalyticsCache("top-countries-over-time");
-  res.json(data || []);
-});
 
-
-/*
 app.get('/analytics/top-countries-over-time', async (req, res) => {
   try {
     const limit = Math.max(1, Math.min(Number(req.query.limit) || 5, 12));
@@ -814,18 +803,15 @@ app.get('/analytics/top-countries-over-time', async (req, res) => {
     res.status(500).json({ error: "server_error" });
   }
 });
-*/
 
+// For Chart 4
 // Types over time (date × disasterType) for stacked area chart
-app.get("/analytics/types-over-time", async (req, res) => {
-  const data = await getAnalyticsCache("types-over-time");
-  res.json(data || []);
-});
-
-/*
 app.get('/analytics/types-over-time', async (req, res) => {
   try {
+    const match = buildMatchQuery(req.query.days);
+
     const results = await Post.aggregate([
+      { $match: match },
       {
         $addFields: {
           _type: "$labels.disasterType",
@@ -837,13 +823,15 @@ app.get('/analytics/types-over-time', async (req, res) => {
       { $project: { _id: 0, bucket: "$_id.day", type: "$_id.type", count: 1 } },
       { $sort: { bucket: 1, type: 1 } }
     ]);
+
     res.json(results);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "server_error" });
   }
 });
-*/
+
+
 
 app.post("/register", async (req, res) => {
   try {
