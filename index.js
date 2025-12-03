@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
+import Event from "./event_schema.js";
 import Post from './post_schema.js';
 import Resource from "./resource_schema.js";
 
@@ -883,6 +884,177 @@ app.post("/login", async (req, res) => {
   }
 });
 
+// CREATE NEW EVENT
+app.post("/api/event/new", isLoggedIn, async(req, res) => {
+
+  const user_info = req.user;
+
+  const user = await User.findById(user_info.id);
+
+
+  if(!user) {
+    console.log("ruh roh")
+    return
+  }
+  let {eventName, description, location, eventDate,address, image, maxAttendees} = req.body;
+
+  
+
+  const event = new Event({
+    eventName,
+    description,
+    location,
+    eventDate,
+    address,
+    image,
+    maxAttendees,
+    host : user,
+    
+  });
+
+
+  user.eventsHosting.push(event);
+
+  console.log("==========EVENT==========");
+  console.log(event);
+  console.log();
+
+  console.log("=======================USER===============");
+  console.log(user);
+
+  await user.save();
+  await event.save();
+
+
+  res.status(200).json({message: "event created successfully", eventId: event.id});
+});
+
+// GET ALL EVENTS
+app.get("/api/event/all", optionalAuth, async (req, res) => {
+  const events = await Event.find()
+    .populate("host", "username _id")
+    .populate("attendees", "username _id")
+    .sort({ createdAt: -1 });
+  res.json(events);
+});
+
+// JOIN EVENT
+app.post("/api/event/:id/join", isLoggedIn, async (req, res) => {
+  const user_info = req.user;
+  const userId = user_info.id;
+
+  const user = await User.findById(userId);
+
+  const eventId = req.params.id;
+  const event = await Event.findById(eventId)
+      .populate("host", "username _id")
+      .populate("attendees", "username _id");
+
+  // could not find event info 
+  if (!event) {
+    res.status(400).json({error: "could not find the event"});
+    return;
+  }
+
+  // could not get user info
+  if (!user) {
+    res.status(400).json({ error : "could not find logged in user\'s information"});
+    return;
+  }
+
+  // if user is already attending the event
+  if(event.attendees.some((a) => a._id.equals(userId))) {
+    res.status(400).json({ error : "user is already attending event, cannot join again"});
+    return;
+  }
+
+  // if user is the event's host
+  if(event.host?._id.equals(userId)){
+    res.status(400).json({ error : "cannot join your own event!"});
+    return;
+  }
+
+
+
+  user.eventsAttending.push(event);
+
+  event.attendees.push(user);
+
+  await user.save();
+  await event.save();
+
+
+  res.status(200).json({ message : "successfully joined the event" });
+});
+
+// LEAVE EVENT
+app.post("/api/event/:id/leave", isLoggedIn, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id: eventId } = req.params;
+
+    const event = await Event.findById(eventId);
+    if (!event) return res.status(404).json({ error: "Event not found" });
+
+    // Prevent host from "leaving" their own event
+    if (event.host.equals(userId)) {
+      return res.status(400).json({ error: "Host cannot leave their own event" });
+    }
+
+    // Remove user from event's attendees
+    await Event.findByIdAndUpdate(eventId, {
+      $pull: { attendees: userId },
+    });
+
+    // Optional: also remove event from user's attending list
+    await User.findByIdAndUpdate(userId, {
+      $pull: { eventsAttending: eventId },
+    });
+
+    res.status(200).json({ message: "You have left the event" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to leave event" });
+  }
+});
+
+// CANCEL EVENT
+app.post("/api/event/:id/cancel", isLoggedIn, async (req, res) => {
+  try {
+    const { id: eventId } = req.params;
+    const userId = req.user.id; // From isLoggedIn middleware
+
+    const event = await Event.findById(eventId);
+    if (!event) return res.status(404).json({ error: "Event not found" });
+
+    // Check if the user is the host
+    if (!event.host.equals(userId)) {
+      return res.status(403).json({ error: "Only the host can cancel this event" });
+    }
+
+    // Remove event reference from all attendees
+    if (event.attendees.length > 0) {
+      await User.updateMany(
+        { _id: { $in: event.attendees } },
+        { $pull: { eventsAttending: event._id } }
+      );
+    }
+
+    // Remove event reference from host’s eventsHosting list
+    await User.findByIdAndUpdate(userId, {
+      $pull: { eventsHosting: event._id },
+    });
+
+    // Finally, delete the event itself
+    await Event.findByIdAndDelete(event._id);
+
+    res.status(200).json({ message: "Event cancelled and removed successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to cancel event" });
+  }
+});
+
 app.get("/logout", (req, res) => {
   res.clearCookie("token", {
     httpOnly: true,
@@ -1068,5 +1240,3 @@ start().then(() => {
   // // Then repeat every 15 minutes
   setInterval(refreshAllDisasterData, 15 * 60 * 1000);
 });
-
-

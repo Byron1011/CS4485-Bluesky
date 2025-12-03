@@ -6,9 +6,12 @@ const eventSchema = new mongoose.Schema({
 
   eventDate: { type: Date, required: true },
 
-  description: { type: String, required: true },
+  description: { type: String },
 
-  //ref to User schema
+  // Human-readable address
+  address: { type: String },
+
+  // ref to User schema
   host: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'User', 
@@ -30,7 +33,13 @@ const eventSchema = new mongoose.Schema({
       type: [Number],
       required: true
     }
-    },
+  },
+
+  // Optional: event image URL
+  image: { type: String },
+
+  // Optional: max attendees limit
+  maxAttendees: { type: Number },
 
   createdAt: { type: Date, default: Date.now },
 
