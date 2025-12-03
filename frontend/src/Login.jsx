@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 import logoUrl from "./assets/logo.png";
+import { useNotifications } from "./NotificationContext";
 
 /*keep dark mode*/
 function useEnsureTheme() {
@@ -19,19 +20,36 @@ export default function Login() {
   const { login } = useAuth();
   const nav = useNavigate();
   const location = useLocation();
-  const flash = location.state?.flash;
+  const { notify } = useNotifications();
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [err, setErr] = useState("");
+ 
+  useEffect(() => {
+    const msg = location.state?.notify;
+    if (msg) {
+      notify(msg);
+      nav(location.pathname, { replace: true }); 
+    }
+  }, [location]);
 
   async function onSubmit(e) {
     e.preventDefault();
-    setErr("");
+
     try {
       await login(username, password);
+
+      notify({
+        type: "success",
+        text: "Logged in successfully!"
+      });
+
       nav("/dashboard");
     } catch (e) {
-      setErr(e.message || "Login failed");
+      notify({
+        type: "error",
+        text: e.message || "Login failed"
+      });
     }
   }
 
@@ -53,14 +71,6 @@ export default function Login() {
         <section className="auth-form-card">
           <h1 className="auth-title">Login</h1>
           <p className="auth-subtitle">Sign in to access full dashboard, or continue using as Guest</p>
-
-          {flash && flash.type === "success" && (
-            <div className="flash-card flash-card--success">
-              {flash.text}
-            </div>
-          )}
-
-          {err ? <div className="error-card">{String(err)}</div> : null}
 
           <form className="auth-form" onSubmit={onSubmit}>
             <div className="auth-row">

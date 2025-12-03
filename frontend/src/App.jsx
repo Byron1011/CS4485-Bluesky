@@ -136,7 +136,6 @@ function normalizeApiResults(apiRows) {
         if (['low','moderate','severe'].includes(norm)) {
           severityLevel = norm;
         } else {
-          // preserve unknown/other text so the pill shows what backend said
           severityLevel = raw;
         }
       }
@@ -777,4 +776,3 @@ export default function App() {
     </>
   );
 }
-

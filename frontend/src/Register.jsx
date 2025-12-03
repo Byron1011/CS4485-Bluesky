@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 import logoUrl from "./assets/logo.png";
+import { useNotifications } from "./NotificationContext";
 
 /*keep dark mode*/
 function useEnsureTheme() {
@@ -18,26 +19,31 @@ export default function Register() {
   useEnsureTheme();
   const { register } = useAuth();
   const nav = useNavigate();
+  const { notify } = useNotifications();
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [err, setErr] = useState("");
 
   async function onSubmit(e) {
     e.preventDefault();
-    setErr("");
+
     try {
       await register(username, password);
-      //Send message along with redirect
-      nav("/login", {
-        state: {
-          flash: {
-            type: "success",
-            text: "Successfully registered! Please log in to continue.",
-          },
-        },
+
+      // notify success
+      notify({
+        type: "success",
+        text: "Account created successfully! Please log in."
       });
+
+      // redirect
+      nav("/login");
+
     } catch (e) {
-      setErr(e.message || "Registration failed");
+      notify({
+        type: "error",
+        text: e.message || "Registration failed."
+      });
     }
   }
 
@@ -59,8 +65,6 @@ export default function Register() {
         <section className="auth-form-card">
           <h1 className="auth-title">Register</h1>
           <p className="auth-subtitle">Start using the Crisis &amp; Disaster Dashboard</p>
-
-          {err ? <div className="error-card">{String(err)}</div> : null}
 
           <form className="auth-form" onSubmit={onSubmit}>
             <div className="auth-row">
