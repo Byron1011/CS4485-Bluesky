@@ -2,10 +2,12 @@ import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import logoUrl from '../assets/logo.png';
+import { useNotifications } from "../NotificationContext.jsx";
 
 export default function Topbar() {
   const loc = useLocation();
   const { user, logout } = useAuth();
+  const { notify } = useNotifications(); 
   const nav = useNavigate();
   
   return (
@@ -33,6 +35,12 @@ export default function Topbar() {
         >
           Analytics
         </NavLink>
+        <NavLink
+          to="/events/index"
+          className={({ isActive }) => `toplink ${isActive ? 'active' : ''}`}
+        >
+          Events
+        </NavLink>
       </nav>
 
       {/* right: user login/out register */}
@@ -52,17 +60,23 @@ export default function Topbar() {
                 className="btn btn--md btn--primary"
                 onClick={async () => {
                   await logout();
-                  nav('/login');
+                  notify({
+                    type: "success",
+                    text: "Logged out successfully."
+                  });
+                  nav("/login");
                 }}
-                title="Logout"
               >
                 Logout
               </button>
 
-              {user.role !== 'guest' && (
-                <Link to="/protected" className="btn btn--md btn--ghost">
+              {user && user.role === "admin" && (
+                <button
+                  className="topbar-btn topbar-btn--soft"
+                  onClick={() => nav("/protected")}
+                >
                   Protected
-                </Link>
+                </button>
               )}
             </>
           ) : (
@@ -80,4 +94,3 @@ export default function Topbar() {
     </header>
   );
 }
-

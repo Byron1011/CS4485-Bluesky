@@ -249,7 +249,7 @@ function TopCountriesOverTimeLine({ limit = 5, days = 30, onZoom, isFocused }) {
 
     return (
         <Card
-            title={`Top 5 Countries — Daily Posts`}  
+            title={`Top Countries — Daily Posts`}  
             subtitle="Daily Post counts for the Top Posting."
             onZoom={onZoom}
             isFocused={isFocused}
@@ -419,7 +419,7 @@ export default function Analytics() {
 
         <div style={{ marginTop: 12, display: "flex", gap: 12 }}>
             <label>
-                Days:{" "}
+                Amount of Days: {" "}
                 <input
                 type="number"
                 min="1"
@@ -431,7 +431,7 @@ export default function Analytics() {
             </label>
 
             <label>
-                Limit:{" "}
+                Amount of Results: {" "}
                 <input
                 type="number"
                 min="1"
@@ -508,5 +508,3 @@ export default function Analytics() {
     </div>
   );
 }
-
-
