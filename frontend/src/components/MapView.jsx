@@ -897,7 +897,7 @@ const clearAllModesHint = () => {
 
     // base tiles
     L.tileLayer(
-      'https://tiles.stadiamaps.com/tiles/outdoors/{z}/{x}/{y}{r}.{ext}',
+      'https://tiles.stadiamaps.com/tiles/outdoors/%7Bz%7D/%7Bx%7D/%7By%7D%7Br%7D.%7Bext%7D?api_key=' + import.meta.env.VITE_STADIA_API_KEY,
       {
         minZoom: 0,
         maxZoom: 20,
