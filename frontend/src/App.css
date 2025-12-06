@@ -409,7 +409,8 @@ body {
 /* left side posts list */
 .list-box {
   height: 100%;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--card);
@@ -459,7 +460,20 @@ body {
 .post-text {
   font-size: 16.5px;
   line-height: 1.5;
-  color: var(--text); 
+  color: var(--text);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.post-text {
+  white-space: normal !important;
+  overflow-wrap: break-word !important;
+  word-break: break-word !important;
+}
+
+.post, 
+.post-text {
+  min-width: 0 !important;
 }
 
 .post-meta { 
