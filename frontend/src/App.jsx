@@ -11,7 +11,7 @@ import Analytics from './components/Analytics';
 import Cookies from 'js-cookie';
 import logoUrl from './assets/logo.png';
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 
 const KNOWN_TYPES = new Set([
   'flood',
@@ -196,8 +196,6 @@ function normalizeApiResults(apiRows) {
       severityScore     // 0..1 or null
     });
   }
-
-  // deduplicate by postId if needed
   const uniqueOut = Object.values(
     out.reduce((acc, item) => {
       const k = (item.postId ?? item.id);
@@ -232,16 +230,26 @@ function dateRangeLabel(from, to) {
   return `Until ${fmtDate(to)}`;
 }
 
-//fetch every post on page
-async function fetchAllPosts({ withCoords = false } = {}) {
+// fetch every post on page: added date filter bug fix made maxposts 5000 instead of 4000
+async function fetchPosts({ from, to, types, maxPosts = 5000 } = {}) {
   const PAGE_SIZE = 200;
-  const MAX_PAGES = 20;
+  const MAX_PAGES = Math.ceil(maxPosts / PAGE_SIZE);
   let page = 1;
   const all = [];
   let total = null;
 
   while (page <= MAX_PAGES) {
-    const url = `/posts?page=${page}&pageSize=${PAGE_SIZE}${withCoords ? '&withCoords=1' : ''}`;
+    // Build URL with server-side filters
+    const params = new URLSearchParams();
+    params.set('page', String(page));
+    params.set('pageSize', String(PAGE_SIZE));
+    
+    // Add date filters to API call
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    if (types && types.length) params.set('types', types.join(','));
+
+    const url = `/posts?${params.toString()}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
@@ -343,11 +351,11 @@ function Dashboard() {
         setLoading(true);
         setError(null);
 
-        const { rows, total } = await fetchAllPosts({ withCoords: false });
+        // Fetch posts
+        const { rows, total } = await fetchPosts({ maxPosts: 5000 });
         const normalized = normalizeApiResults(rows);
 
-        console.log('[SAMPLE]', rows[0]);
-        console.log('[NORMALIZED SAMPLE]', normalized[0]);
+        console.log(`[INITIAL LOAD] Loaded ${normalized.length} posts`);
 
         if (!cancelled) {
           setPosts(normalized);
@@ -361,9 +369,37 @@ function Dashboard() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, []);  
 
-  // dynamic type options from data
+  // When date picker is used, fetch that specific date range from server
+  useEffect(() => {
+    // Skip if no date range selected or still initial load
+    if ((!filters.dateFrom && !filters.dateTo) || loading) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        // fetch in background
+        const from = filters.dateFrom ? filters.dateFrom + 'T00:00:00Z' : null;
+        const to = filters.dateTo ? filters.dateTo + 'T23:59:59.999Z' : null;
+
+        const { rows, total } = await fetchPosts({ from, to, maxPosts: 5000 });
+        const normalized = normalizeApiResults(rows);
+
+        console.log(`[DATE RANGE FETCH] Loaded ${normalized.length} posts for ${filters.dateFrom} to ${filters.dateTo}`);
+
+        if (!cancelled) {
+          setPosts(normalized);
+          setTotal(total);
+        }
+      } catch (err) {
+        console.error('Failed to load posts for date range:', err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [filters.dateFrom, filters.dateTo]);
+
+  //dynamic type options from data
   const allTypes = useMemo(() => {
     return Array.from(
       new Set(
@@ -374,7 +410,7 @@ function Dashboard() {
     ).sort((a, b) => a.localeCompare(b));
   }, [posts]);
 
-  // filter pipeline
+  // Filter pipeline 
   const filteredPosts = useMemo(() => {
     let arr = posts;
 
@@ -393,7 +429,7 @@ function Dashboard() {
       });
     }
 
-    // date-range (calendar)
+    // date-range (calender)
     if (filters.dateFrom || filters.dateTo) {
       const start = filters.dateFrom
         ? new Date(filters.dateFrom + 'T00:00:00').getTime()
@@ -430,7 +466,7 @@ function Dashboard() {
     (filters.types?.length ? `Types: ${filters.types.join(', ')}` : 'Types: Any'),
     `Time: ${timeWindowLabel(filters.timeWindowHours)}`,
     `Dates: ${dateRangeLabel(filters.dateFrom, filters.dateTo)}`,
-    search.trim() ? `Search: “${search.trim()}”` : null,
+    search.trim() ? `Search: "${search.trim()}"` : null,
   ].filter(Boolean).join(' · ');
 
   const lastUpdated = useMemo(() => {
@@ -441,7 +477,7 @@ function Dashboard() {
   const refresh = async () => {
     try {
       setLoading(true);
-      const { rows, total } = await fetchAllPosts({ withCoords: false });
+      const { rows, total } = await fetchPosts({ maxPosts: 5000 });
       const normalized = normalizeApiResults(rows);
       setPosts(normalized);
       setTotal(total);
@@ -491,7 +527,7 @@ function Dashboard() {
   useEffect(() => {
     if (!resourcesOpen) return;
 
-    // Wait for the panel to actually be in the DOM
+    // Wait for panel
     const id = window.requestAnimationFrame(() => {
       const panel = document.querySelector('.resources-panel');
       if (!panel) return;
@@ -512,7 +548,7 @@ function Dashboard() {
     try {
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
         notify({
-          type: "info", // or "warning"
+          type: "info",
           text: "That post has no resource locations near."
         });
         return;
@@ -520,6 +556,7 @@ function Dashboard() {
       setResourcesOpen(true);
       setResourcesLoading(true);
       setResourcesError(null);
+
       const res = await fetch(`/resources?long=${lng}&lat=${lat}&radius=${radiusMi}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
@@ -594,7 +631,7 @@ if (error) {
       <div className="app">
         <div className="fullscreen-center">
           <div className="error-card" role="alert">
-            <strong>Couldn’t load posts.</strong>
+            <strong>Couldn't load posts.</strong>
             <div style={{ marginTop: 6 }}>{String(error)}</div>
           </div>
         </div>
